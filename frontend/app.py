@@ -687,37 +687,36 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         st.markdown("#### 🛒 Agent 1: Procurement & Failover Decision Log")
         st.code(res.failover_recovery_note or res.agent1_shopper_draft.negotiation_reasoning, language="text")
 
-        if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
+             if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
             st.markdown("#### 🏦 Agent 3: Ephemeral Token Enclave (The Vault)")
-            st.json({
+            st.code(json.dumps({
                 "token_id": res.agent3_vault_receipt.token.token_id,
                 "amount_ceiling": f"${res.agent3_vault_receipt.token.amount_ceiling:.2f}",
                 "merchant_lock": res.agent3_vault_receipt.token.merchant_id,
                 "signature_hmac_sha256": res.agent3_vault_receipt.token.signature[:24] + "...",
                 "paypal_order_id": res.agent3_vault_receipt.paypal_order_id,
                 "paypal_capture_id": res.agent3_vault_receipt.paypal_capture_id
-            })
+            }, indent=2), language="json")
 
     with c2:
         if res.engine4_routing_result:
             st.markdown("#### ⚡ Engine 4: API Cost Optimizer & Smart Router")
-            st.json({
+            st.code(json.dumps({
                 "route_type": res.engine4_routing_result.route_type,
                 "amount": f"${res.engine4_routing_result.order_amount:.2f}",
                 "fee_saved": f"${res.engine4_routing_result.fee_saved_estimate:.2f}",
                 "summary": res.engine4_routing_result.summary
-            })
+            }, indent=2), language="json")
 
         if res.agent5_circuit_breaker:
             st.markdown("#### 🚨 Agent 5: Real-Time Circuit Breaker & Watchdog")
-            st.json({
+            st.code(json.dumps({
                 "status": res.agent5_circuit_breaker.status,
                 "circuit_breaker_tripped": res.agent5_circuit_breaker.circuit_breaker_tripped,
                 "paypal_action_taken": res.agent5_circuit_breaker.action_taken,
                 "intercept_latency": f"{res.agent5_circuit_breaker.latency_ms} ms",
                 "message": res.agent5_circuit_breaker.message
-            })
-
+            }, indent=2), language="json")
     # Downloadable Proof-of-Safety Certificate as PDF & JSON
     if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
         st.markdown("---")
