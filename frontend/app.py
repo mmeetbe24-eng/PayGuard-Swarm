@@ -687,7 +687,7 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         st.markdown("#### 🛒 Agent 1: Procurement & Failover Decision Log")
         st.code(res.failover_recovery_note or res.agent1_shopper_draft.negotiation_reasoning, language="text")
 
-             if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
+        if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
             st.markdown("#### 🏦 Agent 3: Ephemeral Token Enclave (The Vault)")
             st.code(json.dumps({
                 "token_id": res.agent3_vault_receipt.token.token_id,
