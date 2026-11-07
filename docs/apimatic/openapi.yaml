@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: PayGuard Swarm Protocol API
+  description: >
+    Zero-Trust Multi-Agent Protocol for Safe Autonomous Payments on PayPal.
+    Enforces ephemeral cryptographic bounds, pre-auth HTML sanitization, 
+    and sub-25ms circuit breakers to protect AI shopping agents.
+  version: 1.0.0
+  contact:
+    name: PayGuard Swarm Developer Platform
+    url: https://github.com/PayGuard-Swarm/PayGuard-Swarm
+servers:
+  - url: http://localhost:8000
+    description: Local Enclave Service
+  - url: https://payguard-swarm-api.onrender.com
+    description: Production Cloud Deployment on Render
+paths:
+  /:
+    get:
+      summary: Protocol Health and Status
+      operationId: getProtocolStatus
+      responses:
+        '200':
+          description: Operational status of the PayGuard enclave and PayPal bridge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  protocol:
+                    type: string
+                    example: "PayGuard Swarm"
+                  status:
+                    type: string
+                    example: "OPERATIONAL"
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  paypal_mode:
+                    type: string
+                    example: "LIVE_SANDBOX_REST_V2"
+
+  /api/v1/swarm/execute:
+    post:
+      summary: Execute Autonomous Multi-Agent Procurement Flow
+      operationId: executeSwarmFlow
+      description: >
+        Initiates the 5-agent zero-trust procurement pipeline. Discovers merchants,
+        audits HTML for prompt injections, mints Ephemeral Scoped Tokens (EST),
+        and safely captures payment via PayPal Orders v2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_prompt
+              properties:
+                user_prompt:
+                  type: string
+                  example: "Find and buy Sony WH-1000XM5 headphones under $250 using PayPal"
+                store_choice:
+                  type: string
+                  enum: [AUTO, STORE_A, STORE_B, STORE_C]
+                  default: AUTO
+                max_budget_ceiling:
+                  type: number
+                  format: float
+                  default: 250.00
+                  example: 250.00
+                is_shielded:
+                  type: boolean
+                  default: true
+                simulate_midflight_tamper:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Cryptographic execution result with chained audit block hash
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwarmExecutionResponse'
+
+  /api/v1/ledger/recent:
+    get:
+      summary: Retrieve Recent Chained Audit Blocks
+      operationId: getRecentLedgerBlocks
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of SHA-256 chained audit entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  blocks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditBlock'
+
+  /api/v1/ledger/verify:
+    get:
+      summary: Verify Audit Ledger Hash-Chain Integrity
+      operationId: verifyLedgerIntegrity
+      description: Recomputes and validates the entire cryptographic hash-chain from the Genesis block.
+      responses:
+        '200':
+          description: Chain validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 1153
+                  message:
+                    type: string
+                    example: "All 1153 cryptographically chained blocks are intact and untampered."
+
+  /api/v1/integrations/zapier/webhook:
+    post:
+      summary: Dispatch Event to Zapier Webhook
+      operationId: dispatchZapierEvent
+      description: Emits an event-driven webhook to Zapier for automated SecOps, PagerDuty, or Slack alerting.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_type
+                - payload
+              properties:
+                event_type:
+                  type: string
+                  example: "CIRCUIT_BREAKER_VOID_TRIGGERED"
+                severity:
+                  type: string
+                  enum: [INFO, WARNING, CRITICAL]
+                  default: CRITICAL
+                payload:
+                  type: object
+      responses:
+        '200':
+          description: Webhook dispatch status
+
+components:
+  schemas:
+    SwarmExecutionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        scenario_mode:
+          type: string
+          example: "PROTECTED_PAYGUARD"
+        target_store:
+          type: string
+          example: "Best Buy (Store A)"
+        user_budget_ceiling:
+          type: number
+          example: 224.99
+        total_execution_ms:
+          type: number
+          example: 18.5
+        final_status:
+          type: string
+          example: "ORDER_SETTLED_SECURELY"
+        financial_outcome:
+          type: string
+        audit_hash:
+          type: string
+          example: "a8f3b2819c9e84..."
+
+    AuditBlock:
+      type: object
+      properties:
+        id:
+          type: integer
+        timestamp:
+          type: number
+        iso_time:
+          type: string
+        agent:
+          type: string
+        event_type:
+          type: string
+        payload:
+          type: object
+        prev_hash:
+          type: string
+        block_hash:
+          type: string

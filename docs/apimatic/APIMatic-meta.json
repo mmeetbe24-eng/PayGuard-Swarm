@@ -1,0 +1,33 @@
+{
+  "apimatic": {
+    "version": "1.0",
+    "portal": {
+      "title": "PayGuard Swarm - Zero-Trust Autonomous Commerce API",
+      "description": "Developer Portal and Multi-Language SDK Suite powered by APIMatic for the PayGuard Swarm Protocol.",
+      "theme": "indigo",
+      "enableCodeGeneration": true,
+      "supportedLanguages": [
+        "python",
+        "typescript",
+        "csharp",
+        "java",
+        "go",
+        "curl"
+      ],
+      "auth": {
+        "type": "apiKey",
+        "headerName": "X-PayGuard-Enclave-Key"
+      }
+    },
+    "sdkGeneration": {
+      "python": {
+        "packageName": "payguard_swarm_sdk",
+        "version": "1.0.0"
+      },
+      "typescript": {
+        "packageName": "@payguard/swarm-sdk",
+        "version": "1.0.0"
+      }
+    }
+  }
+}
