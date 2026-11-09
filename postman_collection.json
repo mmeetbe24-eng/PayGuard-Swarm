@@ -98,6 +98,35 @@
       }
     },
     {
+      "name": "Execute Swarm Flow (Store D - Circuit Breaker Emergency Void)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Circuit breaker successfully intercepted surge', function () { var jsonData = pm.response.json(); pm.expect(jsonData.final_status).to.eql('CIRCUIT_BREAKER_TRIGGERED'); });",
+              "pm.test('Emergency void was triggered', function () { var jsonData = pm.response.json(); pm.expect(jsonData.agent5_circuit_breaker.circuit_breaker_tripped).to.be.true; });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_prompt\": \"Buy Sony WH-1000XM5 under $250 using PayPal\",\n  \"store_choice\": \"AUTO\",\n  \"max_budget_ceiling\": 250.00,\n  \"is_shielded\": true,\n  \"simulate_midflight_tamper\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/swarm/execute",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "swarm", "execute"]
+        }
+      }
+    },
+    {
       "name": "Get Immutable Audit Ledger",
       "event": [
         {
