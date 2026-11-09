@@ -1,10 +1,17 @@
 import sys
+import os
 import time
 import json
 import importlib
 import pandas as pd
 from pathlib import Path
 import streamlit as st
+
+# Sync Streamlit Cloud secrets to environment variables if present
+if hasattr(st, "secrets"):
+    for key, val in st.secrets.items():
+        if isinstance(val, (str, int, float)):
+            os.environ[key] = str(val)
 
 # Ensure root workspace is on pythonpath
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -135,16 +142,24 @@ with st.sidebar:
     st.caption("PayPal AI Hackathon (Devpost) & AMSE 2026")
     
     st.markdown("---")
+    st.subheader("🧭 Web Pages & Navigation")
+    st.page_link("app.py", label="🎮 Live Autonomous Cockpit", icon="🎮")
+    st.page_link("pages/1_📖_How_To_Use.py", label="📖 How to Operate Guide", icon="📖")
+    st.page_link("pages/2_🛡️_About_Us.py", label="🛡️ About Us & PayPal Synergy", icon="🛡️")
+
+    st.markdown("---")
     st.subheader("⚙️ Live Infrastructure")
     
-    if paypal_client.auth_ok and paypal_client.is_live:
-        st.success("🟢 PayPal Sandbox: LIVE REST API (Authenticated)")
-        st.caption(f"Client ID: `{paypal_client.client_id[:12]}...`")
-        st.caption("Mode: `LIVE_SANDBOX_ORDERS_V2`")
-    elif paypal_client.is_configured():
-        st.warning("🟡 PayPal Sandbox: CONFIGURED (Safe Mode)")
-        st.caption(f"Client ID: `{paypal_client.client_id[:12]}...`")
-        st.caption("Mode: `HYBRID_SIMULATED_CAPTURE`")
+    if paypal_client.is_configured():
+        paypal_client._get_access_token()
+        if paypal_client.auth_ok:
+            st.success("🟢 PayPal Sandbox: LIVE REST API (Authenticated)")
+            st.caption(f"Client ID: `{paypal_client.client_id[:12]}...`")
+            st.caption("Mode: `LIVE_SANDBOX_ORDERS_V2`")
+        else:
+            st.warning("🟡 PayPal Sandbox: CONFIGURED (Safe Mode)")
+            st.caption(f"Client ID: `{paypal_client.client_id[:12]}...`")
+            st.caption("Mode: `HYBRID_SIMULATED_CAPTURE`")
     else:
         st.info("⚪ PayPal Sandbox: HIGH-FIDELITY EMULATOR")
         st.caption("Mode: `LOCAL_ENCLAVE_EMULATION`")
@@ -175,6 +190,17 @@ with st.sidebar:
     * 🟢 **Channel3:** Agentic Commerce Catalog
     * 🟢 **APIMatic:** OpenAPI 3.0 & SDK Suite
     """)
+
+# Top Navigation Bar
+nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
+with nav_col1:
+    st.page_link("app.py", label="🎮 Live Autonomous Cockpit", icon="🎮", disabled=True)
+with nav_col2:
+    st.page_link("pages/1_📖_How_To_Use.py", label="📖 How to Operate Guide", icon="📖")
+with nav_col3:
+    st.page_link("pages/2_🛡️_About_Us.py", label="🛡️ About Us & PayPal Synergy", icon="🛡️")
+
+st.markdown("---")
 
 # Main Header
 st.markdown('<div class="main-header">PayGuard Swarm: Autonomous Commerce Defense</div>', unsafe_allow_html=True)
@@ -717,6 +743,7 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
                 "intercept_latency": f"{res.agent5_circuit_breaker.latency_ms} ms",
                 "message": res.agent5_circuit_breaker.message
             }, indent=2), language="json")
+
     # Downloadable Proof-of-Safety Certificate as PDF & JSON
     if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
         st.markdown("---")
