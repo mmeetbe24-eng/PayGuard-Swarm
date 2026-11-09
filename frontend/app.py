@@ -46,6 +46,8 @@ swarm_orchestrator = swarm_mod.swarm_orchestrator
 dynamic_market = market_mod.dynamic_market
 generate_security_certificate_pdf = pdf_mod.generate_security_certificate_pdf
 from backend.app.security.audit_ledger import audit_ledger
+from frontend.views.guide_view import render_guide_page
+from frontend.views.about_view import render_about_page
 
 # Check for AG Grid
 try:
@@ -141,11 +143,31 @@ with st.sidebar:
     st.markdown("**Zero-Trust Execution Protocol**")
     st.caption("PayPal AI Hackathon (Devpost) & AMSE 2026")
     
+    # Navigation Mapping
+    page_map = {
+        "cockpit": "🎮 Live Autonomous Cockpit",
+        "guide": "📖 How to Operate Guide",
+        "about": "🛡️ About Us & PayPal Synergy"
+    }
+    inv_map = {v: k for k, v in page_map.items()}
+
+    # Read active page from URL query param (?page=guide, ?page=about, ?page=cockpit)
+    active_page = st.query_params.get("page", "cockpit")
+    if active_page not in page_map:
+        active_page = "cockpit"
+
     st.markdown("---")
-    st.subheader("🧭 Web Pages & Navigation")
-    st.page_link("app.py", label="🎮 Live Autonomous Cockpit", icon="🎮")
-    st.page_link("pages/1_📖_How_To_Use.py", label="📖 How to Operate Guide", icon="📖")
-    st.page_link("pages/2_🛡️_About_Us.py", label="🛡️ About Us & PayPal Synergy", icon="🛡️")
+    st.subheader("🧭 Navigation")
+    selected_label = st.radio(
+        "Switch Page View:",
+        options=list(page_map.values()),
+        index=list(page_map.keys()).index(active_page),
+        label_visibility="collapsed"
+    )
+    selected_page = inv_map[selected_label]
+    if selected_page != active_page:
+        st.query_params["page"] = selected_page
+        st.rerun()
 
     st.markdown("---")
     st.subheader("⚙️ Live Infrastructure")
@@ -194,13 +216,26 @@ with st.sidebar:
 # Top Navigation Bar
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 with nav_col1:
-    st.page_link("app.py", label="🎮 Live Autonomous Cockpit", icon="🎮", disabled=True)
+    if st.button("🎮 Live Autonomous Cockpit", use_container_width=True, type="primary" if selected_page == "cockpit" else "secondary"):
+        st.query_params["page"] = "cockpit"
+        st.rerun()
 with nav_col2:
-    st.page_link("pages/1_📖_How_To_Use.py", label="📖 How to Operate Guide", icon="📖")
+    if st.button("📖 How to Operate Guide", use_container_width=True, type="primary" if selected_page == "guide" else "secondary"):
+        st.query_params["page"] = "guide"
+        st.rerun()
 with nav_col3:
-    st.page_link("pages/2_🛡️_About_Us.py", label="🛡️ About Us & PayPal Synergy", icon="🛡️")
+    if st.button("🛡️ About Us & PayPal Synergy", use_container_width=True, type="primary" if selected_page == "about" else "secondary"):
+        st.query_params["page"] = "about"
+        st.rerun()
 
 st.markdown("---")
+
+if selected_page == "guide":
+    render_guide_page()
+    st.stop()
+elif selected_page == "about":
+    render_about_page()
+    st.stop()
 
 # Main Header
 st.markdown('<div class="main-header">PayGuard Swarm: Autonomous Commerce Defense</div>', unsafe_allow_html=True)
