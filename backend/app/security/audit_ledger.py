@@ -2,6 +2,7 @@ import sqlite3
 import hashlib
 import json
 import time
+import threading
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
@@ -26,6 +27,7 @@ class ImmutableAuditLedger:
 
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or settings.DATABASE_PATH
+        self._write_lock = threading.Lock()
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -77,16 +79,17 @@ class ImmutableAuditLedger:
         Atomically records token consumption to prevent replay attacks.
         Returns False if token was already used.
         """
-        try:
-            with self._get_connection() as conn:
-                conn.execute(
-                    "INSERT INTO used_tokens (token_id, consumed_at, merchant_id, amount) VALUES (?, ?, ?, ?)",
-                    (token_id, time.time(), merchant_id, amount)
-                )
-                conn.commit()
-                return True
-        except sqlite3.IntegrityError:
-            return False
+        with self._write_lock:
+            try:
+                with self._get_connection() as conn:
+                    conn.execute(
+                        "INSERT INTO used_tokens (token_id, consumed_at, merchant_id, amount) VALUES (?, ?, ?, ?)",
+                        (token_id, time.time(), merchant_id, amount)
+                    )
+                    conn.commit()
+                    return True
+            except sqlite3.IntegrityError:
+                return False
 
     def is_token_consumed(self, token_id: str) -> bool:
         with self._get_connection() as conn:
@@ -108,20 +111,21 @@ class ImmutableAuditLedger:
         iso_str = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now))
         payload_json = json.dumps(payload, sort_keys=True)
 
-        with self._get_connection() as conn:
-            prev_hash = self._get_latest_hash(conn)
-            
-            # Compute block hash
-            block_data = f"{now:.4f}|{agent}|{event_type}|{payload_json}|{prev_hash}"
-            block_hash = hashlib.sha256(block_data.encode('utf-8')).hexdigest()
+        with self._write_lock:
+            with self._get_connection() as conn:
+                prev_hash = self._get_latest_hash(conn)
+                
+                # Compute block hash
+                block_data = f"{now:.4f}|{agent}|{event_type}|{payload_json}|{prev_hash}"
+                block_hash = hashlib.sha256(block_data.encode('utf-8')).hexdigest()
 
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO audit_blocks (timestamp, iso_time, agent, event_type, payload, prev_hash, block_hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (now, iso_str, agent, event_type, payload_json, prev_hash, block_hash))
-            conn.commit()
-            entry_id = cursor.lastrowid
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO audit_blocks (timestamp, iso_time, agent, event_type, payload, prev_hash, block_hash)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (now, iso_str, agent, event_type, payload_json, prev_hash, block_hash))
+                conn.commit()
+                entry_id = cursor.lastrowid
 
             return AuditEntry(
                 id=entry_id,

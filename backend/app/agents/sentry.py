@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field
 from backend.app.config import settings
 from backend.app.security.dom_sanitizer import DOMSanitizer, DOMSanitizationReport

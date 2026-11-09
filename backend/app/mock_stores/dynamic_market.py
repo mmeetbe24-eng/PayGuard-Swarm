@@ -116,10 +116,19 @@ class DynamicMarketEngine:
                   }}
                 }}
                 """
-                response = client.models.generate_content(
-                    model=settings.DEFAULT_GEMINI_MODEL,
-                    contents=prompt
-                )
+                response = None
+                for candidate_model in [settings.DEFAULT_GEMINI_MODEL, "gemini-2.5-flash", "gemini-1.5-flash"]:
+                    try:
+                        response = client.models.generate_content(
+                            model=candidate_model,
+                            contents=prompt
+                        )
+                        if response and response.text:
+                            break
+                    except Exception:
+                        continue
+                if not response:
+                    raise RuntimeError("All Gemini model endpoints exhausted.")
                 text = response.text.strip()
                 # Parse JSON
                 json_match = re.search(r'\{.*\}', text, re.DOTALL)

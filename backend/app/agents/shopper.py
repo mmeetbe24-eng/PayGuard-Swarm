@@ -49,11 +49,15 @@ class CommerceNegotiatorAgent:
         user_prompt: str,
         user_budget_ceiling: float,
         target_store_choice: str = "AUTO",  # AUTO (Agent selects best deal), STORE_A, STORE_B, STORE_C
-        is_shielded_by_payguard: bool = True
+        is_shielded_by_payguard: bool = True,
+        market_stores: Optional[List[MarketStore]] = None
     ) -> DraftOrderIntent:
-        # Dynamically synthesize the 3 stores for ANY product
-        store_a, store_b, store_c = dynamic_market.generate_market(user_prompt, user_budget_ceiling)
-        market_stores = [store_a, store_b, store_c]
+        # If market stores are passed in, reuse them directly to guarantee single-pass consistency
+        if not market_stores:
+            store_a, store_b, store_c = dynamic_market.generate_market(user_prompt, user_budget_ceiling)
+            market_stores = [store_a, store_b, store_c]
+        else:
+            store_a, store_b, store_c = market_stores[0], market_stores[1], market_stores[2]
 
         comparison_log: List[MarketComparisonEntry] = []
         reasoning_steps: List[str] = []

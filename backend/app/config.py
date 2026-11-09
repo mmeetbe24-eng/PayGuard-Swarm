@@ -16,6 +16,16 @@ except ImportError:
                     k, v = line.split("=", 1)
                     os.environ.setdefault(k.strip(), v.strip())
 
+# Support Streamlit Cloud st.secrets
+try:
+    import streamlit as st
+    if hasattr(st, "secrets"):
+        for k, v in st.secrets.items():
+            if isinstance(v, (str, int, float)):
+                os.environ.setdefault(str(k), str(v))
+except Exception:
+    pass
+
 class Settings:
     PROJECT_NAME: str = "PayGuard Swarm"
     VERSION: str = "1.0.0"
@@ -23,7 +33,7 @@ class Settings:
     
     # Gemini Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    DEFAULT_GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    DEFAULT_GEMINI_MODEL: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
     
     # PayPal Sandbox Configuration
     PAYPAL_MODE: str = os.getenv("PAYPAL_MODE", "sandbox")

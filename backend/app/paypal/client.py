@@ -33,6 +33,10 @@ class PayPalClient:
         self.auth_ok: bool = False
         self.last_error: Optional[str] = None
 
+    @property
+    def is_live(self) -> bool:
+        return self.is_configured() and self.auth_ok
+
     def is_configured(self) -> bool:
         return bool(
             self.client_id and 

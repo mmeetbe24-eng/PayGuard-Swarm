@@ -64,7 +64,8 @@ class PayGuardSwarmOrchestrator:
             user_prompt=user_prompt,
             user_budget_ceiling=max_budget_ceiling,
             target_store_choice=store_choice,
-            is_shielded_by_payguard=is_shielded_by_payguard
+            is_shielded_by_payguard=is_shielded_by_payguard,
+            market_stores=[store_a, store_b, store_c]
         )
 
         audit_ledger.record_event(
