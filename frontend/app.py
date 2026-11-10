@@ -24,7 +24,7 @@ if str(BASE_DIR) not in sys.path:
 from backend.app.config import settings
 
 # Automatically ensure global Gemini API key is available in OS environment
-if not os.getenv("GEMINI_API_KEY") and settings.GEMINI_API_KEY:
+if settings.GEMINI_API_KEY:
     os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
 
 # Force deep reload of all sub-modules so Streamlit never runs stale cached code
@@ -316,18 +316,24 @@ with st.sidebar:
         st.info("⚪ PayPal Sandbox: HIGH-FIDELITY EMULATOR")
         st.caption("Mode: `LOCAL_ENCLAVE_EMULATION`")
     
-    if settings.GEMINI_API_KEY:
+    active_gemini_key = (
+        st.session_state.get("runtime_gemini_key")
+        or st.session_state.get("side_gemini_key_input")
+        or os.environ.get("GEMINI_API_KEY")
+        or settings.GEMINI_API_KEY
+    )
+    if active_gemini_key:
+        os.environ["GEMINI_API_KEY"] = str(active_gemini_key)
         st.success(f"🟢 AI Core: Google Gemini Active ({settings.DEFAULT_GEMINI_MODEL})")
         st.caption("Mode: `LIVE_MULTIMODAL_CLOUD_VISION`")
     else:
         st.warning("⚠️ AI Core: Local Rule Engine")
-        with st.expander("🔑 Add Gemini API Key (Live AI Vision)", expanded=False):
+        with st.expander("🔑 Add Gemini API Key (Live AI Vision)", expanded=True):
             st.caption("Provide a Google Gemini API Key to enable live cloud vision analysis:")
             k_in = st.text_input("Gemini API Key", type="password", key="side_gemini_key_input")
             if k_in:
                 st.session_state["runtime_gemini_key"] = k_in
                 os.environ["GEMINI_API_KEY"] = k_in
-                st.success("API key registered!")
                 st.rerun()
         
     st.markdown("---")
