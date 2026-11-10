@@ -36,6 +36,8 @@ class SwarmRequest(BaseModel):
     max_budget_ceiling: float = 90.00
     is_shielded: bool = True
     simulate_midflight_tamper: bool = False
+    max_delivery_days: Optional[int] = None
+    delivery_zip: str = "San Jose, CA 95131"
 
 @app.get("/")
 def read_root():
@@ -60,7 +62,9 @@ def execute_swarm(request: SwarmRequest):
             store_choice=request.store_choice,
             max_budget_ceiling=request.max_budget_ceiling,
             is_shielded_by_payguard=request.is_shielded,
-            simulate_midflight_tamper=request.simulate_midflight_tamper
+            simulate_midflight_tamper=request.simulate_midflight_tamper,
+            max_delivery_days=request.max_delivery_days,
+            delivery_zip=request.delivery_zip
         )
         return result
     except Exception as e:

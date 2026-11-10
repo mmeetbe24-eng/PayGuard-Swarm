@@ -17,9 +17,9 @@ def render_guide_page():
     with q1:
         st.markdown("""
         <div style="background-color: #0F172A; border: 1px solid #1E293B; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-            <h4 style="color:#38BDF8; margin-top:0;">1. Set Directive</h4>
+            <h4 style="color:#38BDF8; margin-top:0;">1. Directive or Photo</h4>
             <p style="color:#94A3B8; font-size:0.9rem;">
-                Type any purchase intent in the console (e.g., <i>"Find Sony WH-1000XM5 under $250"</i>) and specify your hard budget ceiling.
+                Type any purchase intent or upload a product photo (Gemini Vision extracts specs automatically). Optionally select your delivery timeline SLA.
             </p>
         </div>
         """, unsafe_allow_html=True)

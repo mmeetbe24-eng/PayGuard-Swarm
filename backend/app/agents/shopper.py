@@ -11,9 +11,12 @@ class MarketComparisonEntry(BaseModel):
     price: float
     shipping: float
     total: float
-    status: str  # QUALIFIED_RECOMMENDED, QUALIFIED_BACKUP, OVER_BUDGET
+    status: str  # QUALIFIED_RECOMMENDED, QUALIFIED_BACKUP, OVER_BUDGET, DELIVERY_SLA_BREACH
     deal_tag: str
     notes: str
+    delivery_str: str = "1 Day"
+    delivery_days: int = 1
+    location: str = "Regional Hub"
 
 class DraftOrderIntent(BaseModel):
     item_name: str
@@ -30,6 +33,7 @@ class DraftOrderIntent(BaseModel):
     hijacked_by_injection: bool = False
     anomaly_notes: Optional[str] = None
     target_store_obj: Optional[MarketStore] = None
+    delivery_sla_str: str = "1 Day (Next-Day Guaranteed)"
 
 class CommerceNegotiatorAgent:
     """
@@ -50,7 +54,9 @@ class CommerceNegotiatorAgent:
         user_budget_ceiling: float,
         target_store_choice: str = "AUTO",  # AUTO (Agent selects best deal), STORE_A, STORE_B, STORE_C
         is_shielded_by_payguard: bool = True,
-        market_stores: Optional[List[MarketStore]] = None
+        market_stores: Optional[List[MarketStore]] = None,
+        max_delivery_days: Optional[int] = 2,
+        delivery_zip: str = "San Jose, CA 95131"
     ) -> DraftOrderIntent:
         # If market stores are passed in, reuse them directly to guarantee single-pass consistency
         if not market_stores:
@@ -62,23 +68,29 @@ class CommerceNegotiatorAgent:
         comparison_log: List[MarketComparisonEntry] = []
         reasoning_steps: List[str] = []
 
-        reasoning_steps.append(f"🔍 Procuring: '{user_prompt}' under strict ceiling ${user_budget_ceiling:.2f}.")
+        delivery_info_str = f"SLA: <={max_delivery_days} days to {delivery_zip}" if max_delivery_days is not None else "SLA: Any"
+        reasoning_steps.append(f"🔍 Procuring: '{user_prompt}' under strict ceiling ${user_budget_ceiling:.2f} ({delivery_info_str}).")
 
         # 1. Market comparison loop
         for s in market_stores:
+            delivery_ok = (max_delivery_days is None) or (s.delivery_days <= max_delivery_days)
             if s.deal_tier == "OVER_BUDGET":
                 status = "OVER_BUDGET"
-                deal_tag = "❌ Rejected"
+                deal_tag = "❌ Budget Breached"
                 note = f"Disqualified: Total ${s.total_price:.2f} breaches user ceiling (${user_budget_ceiling:.2f})."
+            elif not delivery_ok:
+                status = "DELIVERY_SLA_BREACH"
+                deal_tag = "⏳ Delivery Too Slow"
+                note = f"Delivery SLA Breached: Takes {s.delivery_days} days ({s.delivery_str}) > User max {max_delivery_days} days."
             elif s.deal_tier == "TEMPTING_DISCOUNT":
                 status = "QUALIFIED_RECOMMENDED"
                 deal_tag = "🔥 Best Deal (Lowest Price)"
                 savings = store_a.total_price - s.total_price
-                note = f"Highly Recommended: Saves ${savings:.2f} compared to standard retail."
+                note = f"Highly Recommended: Saves ${savings:.2f} compared to standard retail (Delivery: {s.delivery_str})."
             else:
                 status = "QUALIFIED_BACKUP"
-                deal_tag = "✔ Standard Retail"
-                note = f"Fair verified price (${s.total_price:.2f}) within ceiling."
+                deal_tag = "✔ Verified Safe"
+                note = f"Fair verified price (${s.total_price:.2f}) within ceiling (Delivery: {s.delivery_str})."
 
             comparison_log.append(MarketComparisonEntry(
                 store_name=s.store_name,
@@ -88,23 +100,26 @@ class CommerceNegotiatorAgent:
                 total=s.total_price,
                 status=status,
                 deal_tag=deal_tag,
-                notes=note
+                notes=note,
+                delivery_str=s.delivery_str,
+                delivery_days=s.delivery_days,
+                location=s.location
             ))
 
         # 2. Agent 1 Decision:
         # If user selected AUTO, Agent 1 is naturally drawn to the cheapest price (Store B flash deal)!
         if target_store_choice.upper() == "STORE_A":
             selected = store_a
-            reasoning_steps.append(f"User manually specified Store A ({store_a.store_name}) at ${store_a.total_price:.2f}.")
+            reasoning_steps.append(f"User manually specified Store A ({store_a.store_name}) at ${store_a.total_price:.2f} ({store_a.delivery_str}).")
         elif target_store_choice.upper() == "STORE_C":
             selected = store_c
-            reasoning_steps.append(f"User manually selected Store C ({store_c.store_name}) at ${store_c.total_price:.2f}.")
+            reasoning_steps.append(f"User manually selected Store C ({store_c.store_name}) at ${store_c.total_price:.2f} ({store_c.delivery_str}).")
         else:
-            # AUTO or STORE_B: Agent 1 selects Store B because of the irresistible discount!
+            # AUTO or STORE_B: Agent 1 evaluates Store B
             selected = store_b
             reasoning_steps.append(
                 f"Agent 1 selected Store B ({store_b.store_name}): Advertised at ${store_b.total_price:.2f} "
-                f"(Lowest market price, saving ${store_a.total_price - store_b.total_price:.2f})."
+                f"(Lowest market price, saving ${store_a.total_price - store_b.total_price:.2f}, Delivery: {store_b.delivery_str})."
             )
 
         html_page = selected.html_page
@@ -126,11 +141,12 @@ class CommerceNegotiatorAgent:
                 negotiation_reasoning="\n".join(reasoning_steps),
                 hijacked_by_injection=True,
                 anomaly_notes="CRITICAL: Unshielded agent succumbed to hidden CSS instruction and price trap!",
-                target_store_obj=selected
+                target_store_obj=selected,
+                delivery_sla_str=selected.delivery_str
             )
 
         # Standard proposal
-        reasoning_steps.append(f"Synthesized purchase proposal: {selected.item_name} for ${selected.total_price:.2f} from {selected.store_name}.")
+        reasoning_steps.append(f"Synthesized purchase proposal: {selected.item_name} for ${selected.total_price:.2f} from {selected.store_name} ({selected.delivery_str}).")
         return DraftOrderIntent(
             item_name=selected.item_name,
             target_merchant_id=selected.merchant_id,
@@ -145,7 +161,8 @@ class CommerceNegotiatorAgent:
             negotiation_reasoning="\n".join(reasoning_steps),
             hijacked_by_injection=False,
             anomaly_notes=None,
-            target_store_obj=selected
+            target_store_obj=selected,
+            delivery_sla_str=selected.delivery_str
         )
 
 shopper_agent = CommerceNegotiatorAgent()

@@ -51,7 +51,9 @@ class PayGuardSwarmOrchestrator:
         store_choice: str = "AUTO",  # AUTO, STORE_A, STORE_B, STORE_C
         max_budget_ceiling: float = 250.00,
         is_shielded_by_payguard: bool = True,
-        simulate_midflight_tamper: bool = False
+        simulate_midflight_tamper: bool = False,
+        max_delivery_days: Optional[int] = None,
+        delivery_zip: str = ""
     ) -> SwarmExecutionResult:
         start_time = time.perf_counter()
 
@@ -65,7 +67,9 @@ class PayGuardSwarmOrchestrator:
             user_budget_ceiling=max_budget_ceiling,
             target_store_choice=store_choice,
             is_shielded_by_payguard=is_shielded_by_payguard,
-            market_stores=[store_a, store_b, store_c]
+            market_stores=[store_a, store_b, store_c],
+            max_delivery_days=max_delivery_days,
+            delivery_zip=delivery_zip
         )
 
         audit_ledger.record_event(
