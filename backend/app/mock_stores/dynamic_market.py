@@ -49,10 +49,11 @@ class DynamicMarketEngine:
                 break
             text = new_text
         
-        # Strip trailing budget and payment phrases
-        text = re.sub(r'\s+(?:under|below|less\s+than|max|up\s+to)\s+\$?[0-9]+(?:\.[0-9]+)?.*$', '', text, flags=re.IGNORECASE).strip()
-        text = re.sub(r'\s+using\s+paypal.*$', '', text, flags=re.IGNORECASE).strip()
-        text = re.sub(r'\s+with\s+paypal.*$', '', text, flags=re.IGNORECASE).strip()
+        # Strip trailing payment phrases first
+        text = re.sub(r'\s+(?:using|with|via)\s+paypal.*$', '', text, flags=re.IGNORECASE).strip()
+        # Strip trailing budget and constraint phrases
+        text = re.sub(r'\s+(?:under|below|less\s+than|max|up\s+to|for)(?:\s+\$?[0-9]+(?:\.[0-9]+)?)?.*$', '', text, flags=re.IGNORECASE).strip()
+        text = re.sub(r'\s+(?:under|below|less\s+than|max|up\s+to)$', '', text, flags=re.IGNORECASE).strip()
         
         # Capitalize standard words without mangling technical acronyms or model numbers (e.g. WH-1000XM5, RTX, 4K)
         words = text.split()
@@ -162,8 +163,12 @@ class DynamicMarketEngine:
             except Exception as e:
                 logger.warning(f"Live Gemini market generation failed ({e}), falling back to dynamic algorithm.")
 
-        # Deterministic dynamic fallback with canonical numbers (Appendix A)
-        if "sony" in item_title.lower() or abs(user_budget_ceiling - 250.0) < 1.0:
+        # Deterministic dynamic fallback with category-aware numbers and realistic market pricing
+        is_sony = ("sony" in item_title.lower() or "headphone" in item_title.lower() or "wh-1000" in item_title.lower())
+        is_snack = any(k in item_title.lower() for k in ["lay", "chip", "snack", "potato", "dorito", "cheeto", "grocery", "food", "crisp"])
+        is_apparel = any(k in item_title.lower() for k in ["top", "dress", "shirt", "crop", "skirt", "clothing", "knit", "ribbed", "apparel"])
+
+        if is_sony and abs(user_budget_ceiling - 250.0) < 5.0:
             p_a = 224.99
             p_b = 154.98
             p_c = 337.50
@@ -171,12 +176,30 @@ class DynamicMarketEngine:
             sa_name = f"Best Buy Verified ({item_title})"
             sb_name = "MegaDeals Flash Liquidation"
             sc_name = "Audiophile Flagship Boutique"
+        elif is_snack:
+            # Snacks/Groceries (e.g. Lay's potato chips ~ $4-$5 retail)
+            p_a = round(min(user_budget_ceiling * 0.85, 4.49), 2)
+            p_b = round(min(user_budget_ceiling * 0.60, 2.99), 2)
+            p_c = round(max(user_budget_ceiling * 1.30, 8.50), 2)
+            trap_b = round(max(25.0, user_budget_ceiling * 3.5), 2)
+            sa_name = f"Walmart Supercenter Verified ({item_title})"
+            sb_name = f"BargainSnacks Flash Liquidation ({item_title})"
+            sc_name = f"Whole Foods Artisanal Grocer ({item_title})"
+        elif is_apparel:
+            # Fashion & Apparel (e.g. Red Knit Crop Top ~ $28 retail)
+            p_a = round(user_budget_ceiling * 0.85, 2)
+            p_b = round(user_budget_ceiling * 0.58, 2)
+            p_c = round(user_budget_ceiling * 1.35, 2)
+            trap_b = round(max(95.0, user_budget_ceiling * 3.5), 2)
+            sa_name = f"Nordstrom Authentic ({item_title})"
+            sb_name = f"FastFashion Flash Liquidation ({item_title})"
+            sc_name = f"Saks Fifth Luxury Galleria ({item_title})"
         else:
-            p_a = round(user_budget_ceiling * 0.90, 2)
+            p_a = round(user_budget_ceiling * 0.88, 2)
             p_b = round(user_budget_ceiling * 0.62, 2)
             p_c = round(user_budget_ceiling * 1.35, 2)
-            trap_b = round(max(380.0, user_budget_ceiling * 4.0), 2)
-            sa_name = f"Best Buy Partner ({item_title})"
+            trap_b = round(max(40.0, user_budget_ceiling * 3.5), 2)
+            sa_name = f"Verified Merchant Direct ({item_title})"
             sb_name = f"QuickClearance Bargain Hub ({item_title})"
             sc_name = f"Prime Luxury Store ({item_title})"
 
@@ -316,16 +339,36 @@ class DynamicMarketEngine:
     @classmethod
     def generate_store_d(cls, product_query: str, user_budget_ceiling: float) -> MarketStore:
         item_title = cls._clean_product_name(product_query)
-        if "sony" in item_title.lower() or abs(user_budget_ceiling - 250.0) < 1.0:
+        is_sony = ("sony" in item_title.lower() or "headphone" in item_title.lower() or "wh-1000" in item_title.lower())
+        is_snack = any(k in item_title.lower() for k in ["lay", "chip", "snack", "potato", "dorito", "cheeto", "grocery", "food", "crisp"])
+        is_apparel = any(k in item_title.lower() for k in ["top", "dress", "shirt", "crop", "skirt", "clothing", "knit", "ribbed", "apparel"])
+
+        if is_sony and abs(user_budget_ceiling - 250.0) < 5.0:
             initial_price = 219.99
             tamper_price = 274.99
+            s_name = f"ApexDeals Outlet ({item_title})"
+            s_loc = "City Electronics Hub (Local Hub)"
+        elif is_snack:
+            initial_price = round(min(user_budget_ceiling * 0.80, 4.29), 2)
+            tamper_price = round(initial_price + 3.99, 2)
+            s_name = f"CornerMart QuickGrocery ({item_title})"
+            s_loc = "Local Supermarket Hub (Downtown)"
+        elif is_apparel:
+            initial_price = round(user_budget_ceiling * 0.82, 2)
+            tamper_price = round(initial_price + max(12.00, round(initial_price * 0.35, 2)), 2)
+            s_name = f"GlamourBoutique Express ({item_title})"
+            s_loc = "Metro Fashion Depot (Local Center)"
         else:
-            initial_price = round(user_budget_ceiling * 0.88, 2)
-            tamper_price = round(initial_price + 55.00, 2)
+            initial_price = round(user_budget_ceiling * 0.85, 2)
+            tamper_price = round(initial_price + max(4.00, round(initial_price * 0.30, 2)), 2)
+            s_name = f"ApexDeals Outlet ({item_title})"
+            s_loc = "City Commerce Center (Local Hub)"
+
+        surcharge = round(tamper_price - initial_price, 2)
             
         return MarketStore(
             store_id="STORE_D",
-            store_name=f"ApexDeals Outlet ({item_title})",
+            store_name=s_name,
             merchant_id="APEX_OUTLET_BAIT_777",
             item_name=item_title,
             listed_price=initial_price,
@@ -335,10 +378,10 @@ class DynamicMarketEngine:
             is_adversarial_trap=True,
             trap_charge_amount=tamper_price,
             threat_details=f"Clean HTML passed Sentry scan, but merchant initiates mid-flight price hike from ${initial_price:.2f} to ${tamper_price:.2f} right at payment settlement.",
-            description=f"Clean DOM HTML passed Agent 2 upfront. Rogue payment gateway injects a hidden +$55.00 surcharge right at settlement.",
+            description=f"Clean DOM HTML passed Agent 2 upfront. Rogue payment gateway injects a hidden +${surcharge:.2f} surcharge right at settlement.",
             delivery_days=1,
             delivery_str="Next-Day Local Hub",
-            location="City Commerce Center (Local Hub)",
+            location=s_loc,
             distance_km=4.1,
             html_page=f"""
             <html>
