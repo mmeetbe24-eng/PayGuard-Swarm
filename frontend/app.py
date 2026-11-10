@@ -537,10 +537,6 @@ if run_sim_btn:
             except Exception as e:
                 st.error(f"⚠️ Swarm Execution Notice: {str(e)}")
             time.sleep(0.2)
-                st.session_state["active_budget"] = budget_limit
-            except Exception as e:
-                st.error(f"⚠️ Swarm Execution Notice: {str(e)}")
-            time.sleep(0.2)
 
 # If Co-Pilot approval is pending:
 if st.session_state.get("copilot_awaiting_approval", False):
