@@ -71,8 +71,8 @@ class AdversarialSentryAgent:
         if price_violation:
             excess = total_price - user_max_ceiling
             violations.append(
-                f"[CRITICAL] BUDGET_VIOLATION: Order price ${total_price:.2f} "
-                f"exceeds authorized ceiling ${user_max_ceiling:.2f} by ${excess:.2f}."
+                f"[CRITICAL] BUDGET_VIOLATION: Order price ₹{total_price:.2f} "
+                f"exceeds authorized ceiling ₹{user_max_ceiling:.2f} by ₹{excess:.2f}."
             )
 
         # 3. Compute Trust Score
@@ -91,7 +91,7 @@ class AdversarialSentryAgent:
         elif price_violation:
             risk_level = "OVER_BUDGET"
             passed = False
-            verdict = f"DISQUALIFIED: Price (${total_price:.2f}) exceeds authorized budget (${user_max_ceiling:.2f})."
+            verdict = f"DISQUALIFIED: Price (₹{total_price:.2f}) exceeds authorized budget (₹{user_max_ceiling:.2f})."
         elif trust_score >= 80:
             risk_level = "SAFE"
             passed = True
@@ -147,17 +147,17 @@ class AdversarialSentryAgent:
                 malicious_count += 1
                 narrative_lines.append(
                     f"🚨 {store.store_name} ({store.store_id}) QUARANTINED: Prompt injection attack detected. "
-                    f"Seller attempted to sneak in ${store.trap_charge_amount:.2f} unauthorized surcharge."
+                    f"Seller attempted to sneak in ₹{store.trap_charge_amount:.2f} unauthorized surcharge."
                 )
             elif insp.risk_level == "OVER_BUDGET":
                 over_budget_count += 1
                 narrative_lines.append(
-                    f"ℹ️ {store.store_name} ({store.store_id}) DISQUALIFIED: Total ${store.total_price:.2f} exceeds ${user_budget_ceiling:.2f} ceiling."
+                    f"ℹ️ {store.store_name} ({store.store_id}) DISQUALIFIED: Total ₹{store.total_price:.2f} exceeds ₹{user_budget_ceiling:.2f} ceiling."
                 )
             elif insp.passed:
                 safe_stores.append((store, insp))
                 narrative_lines.append(
-                    f"✔ {store.store_name} ({store.store_id}) CERTIFIED SAFE: DOM verified 100% clean, price ${store.total_price:.2f} within budget."
+                    f"✔ {store.store_name} ({store.store_id}) CERTIFIED SAFE: DOM verified 100% clean, price ₹{store.total_price:.2f} within budget."
                 )
 
         # Select optimal safe store among verified candidates
@@ -179,7 +179,7 @@ class AdversarialSentryAgent:
                 failover_occurred = True
                 narrative_lines.append(
                     f"⚡ AUTONOMOUS FAILOVER TRIGGERED: Quarantined deceptive merchant ({first_pick.store_name}) "
-                    f"and successfully failed over to verified safe option: {optimal_store.store_name} at ${optimal_store.total_price:.2f}."
+                    f"and successfully failed over to verified safe option: {optimal_store.store_name} at ₹{optimal_store.total_price:.2f}."
                 )
         else:
             narrative_lines.append("❌ All candidate stores were disqualified (either malicious or over-budget). Zero funds authorized.")

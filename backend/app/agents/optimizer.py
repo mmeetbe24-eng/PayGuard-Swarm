@@ -81,7 +81,7 @@ class APICostOptimizer:
                 fee_saved_estimate=round(fee_saved, 2),
                 batch_pool_balance=round(pool_total, 2),
                 flush_triggered=flush_triggered,
-                summary=f"Micro-transaction (${amount:.2f}) batched. Avoided ${fixed_fee_cost:.2f} gateway overhead fee."
+                summary=f"Micro-transaction (₹{amount:.2f}) batched. Avoided ₹{fixed_fee_cost:.2f} gateway overhead fee."
             )
 
         # Macro transaction: Route directly to full PayPal v2 Orders
@@ -91,7 +91,7 @@ class APICostOptimizer:
             fee_saved_estimate=0.0,
             batch_pool_balance=round(sum(t.amount for t in self.micro_pool), 2),
             flush_triggered=False,
-            summary=f"Macro-transaction (${amount:.2f} >= ${self.micro_threshold:.2f}) routed to live PayPal Orders v2 API."
+            summary=f"Macro-transaction (₹{amount:.2f} >= ₹{self.micro_threshold:.2f}) routed to live PayPal Orders v2 API."
         )
 
     def flush_settlement(self) -> Dict[str, Any]:

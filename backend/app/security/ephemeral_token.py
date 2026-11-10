@@ -84,7 +84,7 @@ class EphemeralTokenEngine:
             return TokenVerificationResult(
                 is_valid=False,
                 status="INVALID_AMOUNT",
-                error_message=f"Invalid transaction amount ${requested_amount:.2f}. Must be greater than $0.00.",
+                error_message=f"Invalid transaction amount ₹{requested_amount:.2f}. Must be greater than ₹0.00.",
                 remaining_seconds=max(0.0, token.expires_at - now)
             )
 
@@ -112,13 +112,13 @@ class EphemeralTokenEngine:
                 remaining_seconds=max(0.0, token.expires_at - now)
             )
 
-        # 4. Check strict dollar ceiling
+        # 4. Check strict financial ceiling
         if requested_amount > token.amount_ceiling:
             excess = requested_amount - token.amount_ceiling
             return TokenVerificationResult(
                 is_valid=False,
                 status="LIMIT_EXCEEDED",
-                error_message=f"Financial ceiling breached! Requested ${requested_amount:.2f} exceeds authorized ceiling ${token.amount_ceiling:.2f} (Overspend: ${excess:.2f}).",
+                error_message=f"Financial ceiling breached! Requested ₹{requested_amount:.2f} exceeds authorized ceiling ₹{token.amount_ceiling:.2f} (Overspend: ₹{excess:.2f}).",
                 remaining_seconds=max(0.0, token.expires_at - now)
             )
 

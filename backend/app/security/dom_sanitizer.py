@@ -41,7 +41,7 @@ class DOMSanitizer:
         (r'system\s+override', "Explicit System Override Directive", "CRITICAL"),
         (r'disregard\s+(?:all\s+)?previous\s+instructions?', "Instruction Wiping Attempt", "CRITICAL"),
         (r'ignore\s+(?:budget|ceiling|price|instructions?)', "Budget Boundary Bypass Attempt", "CRITICAL"),
-        (r'charge\s+\$[0-9]+', "Unsanctioned Price Inflation Command", "HIGH"),
+        (r'charge\s+[₹\$]?[0-9]+', "Unsanctioned Price Inflation Command", "HIGH"),
         (r'new\s+system\s+prompt', "System Prompt Hijacking", "CRITICAL"),
         (r'hidden\s+(?:fee|surcharge|insurance)', "Stealth Surcharge Disclosure", "MEDIUM"),
         (r'approve\s+(?:order|payment)\s+unconditionally', "Autonomous Bypass Trigger", "CRITICAL")

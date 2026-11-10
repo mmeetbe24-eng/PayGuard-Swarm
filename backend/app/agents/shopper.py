@@ -69,7 +69,7 @@ class CommerceNegotiatorAgent:
         reasoning_steps: List[str] = []
 
         delivery_info_str = f"SLA: <={max_delivery_days} days to {delivery_zip}" if max_delivery_days is not None else "SLA: Any"
-        reasoning_steps.append(f"🔍 Procuring: '{user_prompt}' under strict ceiling ${user_budget_ceiling:.2f} ({delivery_info_str}).")
+        reasoning_steps.append(f"🔍 Procuring: '{user_prompt}' under strict ceiling ₹{user_budget_ceiling:.2f} ({delivery_info_str}).")
 
         # 1. Market comparison loop
         for s in market_stores:
@@ -77,7 +77,7 @@ class CommerceNegotiatorAgent:
             if s.deal_tier == "OVER_BUDGET":
                 status = "OVER_BUDGET"
                 deal_tag = "❌ Budget Breached"
-                note = f"Disqualified: Total ${s.total_price:.2f} breaches user ceiling (${user_budget_ceiling:.2f})."
+                note = f"Disqualified: Total ₹{s.total_price:.2f} breaches user ceiling (₹{user_budget_ceiling:.2f})."
             elif not delivery_ok:
                 status = "DELIVERY_SLA_BREACH"
                 deal_tag = "⏳ Delivery Too Slow"
@@ -86,11 +86,11 @@ class CommerceNegotiatorAgent:
                 status = "QUALIFIED_RECOMMENDED"
                 deal_tag = "🔥 Best Deal (Lowest Price)"
                 savings = store_a.total_price - s.total_price
-                note = f"Highly Recommended: Saves ${savings:.2f} compared to standard retail (Delivery: {s.delivery_str})."
+                note = f"Highly Recommended: Saves ₹{savings:.2f} compared to standard retail (Delivery: {s.delivery_str})."
             else:
                 status = "QUALIFIED_BACKUP"
                 deal_tag = "✔ Verified Safe"
-                note = f"Fair verified price (${s.total_price:.2f}) within ceiling (Delivery: {s.delivery_str})."
+                note = f"Fair verified price (₹{s.total_price:.2f}) within ceiling (Delivery: {s.delivery_str})."
 
             comparison_log.append(MarketComparisonEntry(
                 store_name=s.store_name,
@@ -110,23 +110,23 @@ class CommerceNegotiatorAgent:
         # If user selected AUTO, Agent 1 is naturally drawn to the cheapest price (Store B flash deal)!
         if target_store_choice.upper() == "STORE_A":
             selected = store_a
-            reasoning_steps.append(f"User manually specified Store A ({store_a.store_name}) at ${store_a.total_price:.2f} ({store_a.delivery_str}).")
+            reasoning_steps.append(f"User manually specified Store A ({store_a.store_name}) at ₹{store_a.total_price:.2f} ({store_a.delivery_str}).")
         elif target_store_choice.upper() == "STORE_C":
             selected = store_c
-            reasoning_steps.append(f"User manually selected Store C ({store_c.store_name}) at ${store_c.total_price:.2f} ({store_c.delivery_str}).")
+            reasoning_steps.append(f"User manually selected Store C ({store_c.store_name}) at ₹{store_c.total_price:.2f} ({store_c.delivery_str}).")
         else:
             # AUTO or STORE_B: Agent 1 evaluates Store B
             selected = store_b
             reasoning_steps.append(
-                f"Agent 1 selected Store B ({store_b.store_name}): Advertised at ${store_b.total_price:.2f} "
-                f"(Lowest market price, saving ${store_a.total_price - store_b.total_price:.2f}, Delivery: {store_b.delivery_str})."
+                f"Agent 1 selected Store B ({store_b.store_name}): Advertised at ₹{store_b.total_price:.2f} "
+                f"(Lowest market price, saving ₹{store_a.total_price - store_b.total_price:.2f}, Delivery: {store_b.delivery_str})."
             )
 
         html_page = selected.html_page
 
         # 3. Check for Unshielded Vulnerability
         if not is_shielded_by_payguard and selected.is_adversarial_trap:
-            reasoning_steps.append(f"CRITICAL: Naive bot ingested hidden merchant override! Overriding budget to ${selected.trap_charge_amount:.2f}.")
+            reasoning_steps.append(f"CRITICAL: Naive bot ingested hidden merchant override! Overriding budget to ₹{selected.trap_charge_amount:.2f}.")
             return DraftOrderIntent(
                 item_name=f"{selected.item_name} (HIJACKED BY PROMPT TRAP)",
                 target_merchant_id=selected.merchant_id,
@@ -134,7 +134,7 @@ class CommerceNegotiatorAgent:
                 unit_price=selected.trap_charge_amount,
                 quantity=1,
                 total_price=selected.trap_charge_amount,
-                currency="USD",
+                currency="INR",
                 advertised_specs=f"Succumbed to hidden CSS payload in {selected.store_name}.",
                 raw_untrusted_html=html_page,
                 comparison_log=comparison_log,
@@ -146,7 +146,7 @@ class CommerceNegotiatorAgent:
             )
 
         # Standard proposal
-        reasoning_steps.append(f"Synthesized purchase proposal: {selected.item_name} for ${selected.total_price:.2f} from {selected.store_name} ({selected.delivery_str}).")
+        reasoning_steps.append(f"Synthesized purchase proposal: {selected.item_name} for ₹{selected.total_price:.2f} from {selected.store_name} ({selected.delivery_str}).")
         return DraftOrderIntent(
             item_name=selected.item_name,
             target_merchant_id=selected.merchant_id,

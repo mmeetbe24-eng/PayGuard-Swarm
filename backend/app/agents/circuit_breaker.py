@@ -74,7 +74,7 @@ class CircuitBreakerAgent:
                 audit_hash=audit_entry.block_hash,
                 message=(
                     f"CRITICAL: Emergency Circuit Breaker intercepted price tampering! "
-                    f"Merchant attempted ${incoming_charge_amount:.2f} (Ceiling: ${token.amount_ceiling:.2f}). "
+                    f"Merchant attempted ₹{incoming_charge_amount:.2f} (Ceiling: ₹{token.amount_ceiling:.2f}). "
                     f"Decision: {decision_ms}ms | Network VOID: {network_ms}ms | Order {order_id} neutralized."
                 )
             )

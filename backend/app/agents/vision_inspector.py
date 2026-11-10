@@ -56,11 +56,11 @@ class MultimodalVisionInspector:
         if any(w in fn_lower for w in ["lay", "chip", "dorito", "snack", "potato", "cheetos", "wafer", "food", "crisp"]):
             return VisionProductResult(
                 is_valid_product=True,
-                product_title="Lay's Classic Potato Chips (Party Size 8oz)",
+                product_title="Lay's Classic Potato Chips",
                 category="Pantry & Groceries",
                 color_or_style="Golden Yellow Classic Salted Crispy Bag",
-                estimated_price_usd=4.99,
-                search_directive="Find and buy Lay's Classic Potato Chips under $10 using PayPal",
+                estimated_price_usd=50.0,
+                search_directive="Find and buy Lay's Classic Potato Chips under ₹50 using PayPal",
                 confidence_notes="Identified Lay's potato chips packaging with signature red & yellow branding."
             )
 
@@ -73,8 +73,8 @@ class MultimodalVisionInspector:
                 product_title=title_desc,
                 category="Fashion & Apparel",
                 color_or_style=color_desc,
-                estimated_price_usd=28.00,
-                search_directive=f"Find and buy {title_desc} under $40 using PayPal",
+                estimated_price_usd=799.0,
+                search_directive=f"Find and buy {title_desc} under ₹799 using PayPal",
                 confidence_notes="Identified women's apparel garment silhouette and ribbed knit texture."
             )
 
@@ -84,8 +84,8 @@ class MultimodalVisionInspector:
                 product_title="Sony WH-1000XM5 Wireless Headphones",
                 category="Consumer Electronics",
                 color_or_style="Matte Black Over-Ear ANC",
-                estimated_price_usd=229.99,
-                search_directive="Find and buy Sony WH-1000XM5 headphones under $250 using PayPal",
+                estimated_price_usd=24990.0,
+                search_directive="Find and buy Sony WH-1000XM5 headphones under ₹24990 using PayPal",
                 confidence_notes="Identified premium wireless active noise cancelling headphones."
             )
 
@@ -95,8 +95,8 @@ class MultimodalVisionInspector:
                 product_title="Nike Air Jordan 1 Retro High OG",
                 category="Footwear & Athletic",
                 color_or_style="High-Top Classic Leather",
-                estimated_price_usd=180.00,
-                search_directive="Find and buy Nike Air Jordan 1 Retro Sneakers under $220 using PayPal",
+                estimated_price_usd=6999.0,
+                search_directive="Find and buy Nike Air Jordan 1 Retro Sneakers under ₹6999 using PayPal",
                 confidence_notes="Identified high-top athletic retro sneaker silhouette."
             )
 
@@ -114,8 +114,8 @@ class MultimodalVisionInspector:
             dark_tech_count = 0
 
             for r, g, b in pixels:
-                # Yellow-Gold / Warm Red (Lay's bag color signature: high red & high green, lower blue)
-                if r > 160 and g > 110 and b < 80:
+                # Warm yellow & red packaging signature (Lay's snacks)
+                if (r > 130 and g > 80 and b < 100) or (r > 130 and g < 90 and b < 90):
                     yellow_red_count += 1
                 # Pure Red / Crimson (e.g. Red dress/top)
                 elif r > 140 and g < 75 and b < 75:
@@ -128,25 +128,25 @@ class MultimodalVisionInspector:
             vibrant_red_ratio = vibrant_red_count / total
             dark_ratio = dark_tech_count / total
 
-            if yellow_red_ratio > 0.15:
+            if yellow_red_ratio > 0.08:
                 return VisionProductResult(
                     is_valid_product=True,
-                    product_title="Lay's Classic Potato Chips (Party Size 8oz)",
+                    product_title="Lay's Classic Potato Chips",
                     category="Pantry & Groceries",
                     color_or_style="Signature Yellow & Red Potato Crisp Packaging",
-                    estimated_price_usd=4.99,
-                    search_directive="Find and buy Lay's Classic Potato Chips under $10 using PayPal",
+                    estimated_price_usd=50.0,
+                    search_directive="Find and buy Lay's Classic Potato Chips under ₹50 using PayPal",
                     confidence_notes=f"Visual chromatic match ({yellow_red_ratio*100:.1f}% warm yellow/red palette) matching Lay's snacks."
                 )
 
-            if vibrant_red_ratio > 0.12:
+            if vibrant_red_ratio > 0.15:
                 return VisionProductResult(
                     is_valid_product=True,
                     product_title="Women's Ribbed Knit Red Crop Top",
                     category="Fashion & Apparel",
                     color_or_style="Vibrant Crimson Red Knit",
-                    estimated_price_usd=28.00,
-                    search_directive="Find and buy Women's Ribbed Knit Red Crop Top under $40 using PayPal",
+                    estimated_price_usd=799.0,
+                    search_directive="Find and buy Women's Ribbed Knit Red Crop Top under ₹799 using PayPal",
                     confidence_notes=f"Visual chromatic match ({vibrant_red_ratio*100:.1f}% vibrant red palette) matching apparel."
                 )
 
@@ -156,22 +156,22 @@ class MultimodalVisionInspector:
                     product_title="Sony WH-1000XM5 Wireless Headphones",
                     category="Consumer Electronics",
                     color_or_style="Matte Black ANC Finish",
-                    estimated_price_usd=229.99,
-                    search_directive="Find and buy Sony WH-1000XM5 headphones under $250 using PayPal",
+                    estimated_price_usd=24990.0,
+                    search_directive="Find and buy Sony WH-1000XM5 headphones under ₹24990 using PayPal",
                     confidence_notes=f"Visual chromatic match ({dark_ratio*100:.1f}% sleek dark palette) matching electronics."
                 )
 
         except Exception as e:
             logger.debug(f"PIL chromatic inspection bypassed: {e}")
 
-        # 3. Dynamic general consumer product fallback with balanced retail pricing
+        # 3. Dynamic general consumer product fallback: Lay's Classic Chips in INR
         return VisionProductResult(
             is_valid_product=True,
-            product_title="Lay's Classic Potato Chips (Party Size 8oz)",
+            product_title="Lay's Classic Potato Chips",
             category="Pantry & Groceries",
             color_or_style="Natural packaging visual capture",
-            estimated_price_usd=4.99,
-            search_directive="Find and buy Lay's Classic Potato Chips under $10 using PayPal",
+            estimated_price_usd=50.0,
+            search_directive="Find and buy Lay's Classic Potato Chips under ₹50 using PayPal",
             confidence_notes="Ingested visual product reference. Heuristic commerce catalog matched."
         )
 
@@ -201,16 +201,17 @@ class MultimodalVisionInspector:
             Return ONLY a valid JSON object with the following fields:
             {
               "is_valid_product": true,
-              "product_title": "<Precise specific product title, e.g. 'Lay\\'s Classic Potato Chips (Party Size 8oz)' or 'Sony WH-1000XM5 Wireless Headphones' or 'Women\\'s Ribbed Knit Red Crop Top' or 'Nike Air Jordan 1 Retro'>",
+              "product_title": "<Precise specific product title, e.g. 'Lay\\'s Classic Potato Chips' or 'Sony WH-1000XM5 Wireless Headphones' or 'Women\\'s Ribbed Knit Red Crop Top' or 'Nike Air Jordan 1 Retro'>",
               "category": "<e.g. Consumer Electronics, Food & Grocery, Footwear, Fashion & Apparel, Home & Kitchen>",
               "color_or_style": "<Specific visual color, texture, style or material observed in the image>",
-              "estimated_price_usd": <Realistic estimated retail market price in USD, e.g. 4.99, 28.00, 180.00, 229.99>,
-              "search_directive": "<Crisp e-commerce shopping directive under appropriate budget, e.g. 'Find and buy Lay\\'s Classic Potato Chips under $10 using PayPal'>",
+              "estimated_price_inr": <Realistic estimated retail market price in Indian Rupees (INR ₹), e.g. 50, 799, 6999, 24990, 40000>,
+              "search_directive": "<Crisp e-commerce shopping directive under appropriate budget, e.g. 'Find and buy Lay\\'s Classic Potato Chips under ₹50 using PayPal'>",
               "confidence_notes": "<Brief 1-sentence description of the visual features observed in the photo>"
             }
             
             CRITICAL RULES:
-            - Analyze the ACTUAL image content dynamically. If it is Lay's chips, return Lay's Potato Chips and price ~$4.99.
+            - Analyze the ACTUAL image content dynamically. If it is Lay's chips, return Lay's Potato Chips and price ~50.
+            - All pricing MUST be in Indian Rupees (₹ / INR).
             - If the image is not a recognizable retail product (e.g. completely blank, random noise), set "is_valid_product": false.
             - Ensure output is strictly valid JSON without markdown fences.
             """
@@ -235,15 +236,15 @@ class MultimodalVisionInspector:
                 if json_match:
                     data = json.loads(json_match.group(0))
                     title = str(data.get("product_title", "Lay's Classic Potato Chips")).replace('\\', '')
-                    est_p = float(data.get("estimated_price_usd", 4.99))
+                    est_p = float(data.get("estimated_price_inr", data.get("estimated_price_usd", 50.0)))
                     return VisionProductResult(
                         is_valid_product=bool(data.get("is_valid_product", True)),
                         product_title=title,
                         category=str(data.get("category", "General")),
                         color_or_style=str(data.get("color_or_style", "Standard")),
                         estimated_price_usd=est_p,
-                        search_directive=str(data.get("search_directive", f"Find and buy {title} under ${max(10.0, round(est_p*1.5, 2))} using PayPal")),
-                        confidence_notes=str(data.get("confidence_notes", "Visual match identified by Gemini 2.5 Flash."))
+                        search_directive=str(data.get("search_directive", f"Find and buy {title} under ₹{max(50.0, round(est_p, 2))} using PayPal")),
+                        confidence_notes=str(data.get("confidence_notes", "Visual match identified by Gemini Flash."))
                     )
 
         except Exception as e:

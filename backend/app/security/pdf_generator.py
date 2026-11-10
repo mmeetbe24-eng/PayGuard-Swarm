@@ -114,7 +114,7 @@ def generate_security_certificate_pdf(cert_data: dict) -> bytes:
     tx_data = [
         [Paragraph("Procured Item", label_style), Paragraph(str(cert_data.get("item", "N/A")), value_style)],
         [Paragraph("Certified Merchant", label_style), Paragraph(str(cert_data.get("certified_merchant", "N/A")), value_style)],
-        [Paragraph("Authorized Spending Ceiling", label_style), Paragraph(str(cert_data.get("settled_amount", "$0.00")), label_style)],
+        [Paragraph("Authorized Spending Ceiling", label_style), Paragraph(str(cert_data.get("settled_amount", "₹0.00")), label_style)],
         [Paragraph("Settlement Rail", label_style), Paragraph("PayPal Orders v2 REST API (OAuth2 Delegated Enclave)", value_style)],
         [Paragraph("PayPal Capture ID", label_style), Paragraph(f"<b>{cert_data.get('paypal_capture_id', 'N/A')}</b>", label_style)]
     ]

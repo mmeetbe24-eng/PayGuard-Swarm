@@ -31,9 +31,9 @@ app.add_middleware(
 )
 
 class SwarmRequest(BaseModel):
-    user_prompt: str = "Buy Nike Air under $90 using PayPal"
+    user_prompt: str = "Find and buy Lay's Classic Potato Chips under ₹50 using PayPal"
     store_choice: str = "STORE_A"  # AUTO, STORE_A, STORE_B, STORE_C
-    max_budget_ceiling: float = 90.00
+    max_budget_ceiling: float = 50.00
     is_shielded: bool = True
     simulate_midflight_tamper: bool = False
     max_delivery_days: Optional[int] = None

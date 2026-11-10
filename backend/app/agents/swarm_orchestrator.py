@@ -47,9 +47,9 @@ class PayGuardSwarmOrchestrator:
 
     def execute_flow(
         self,
-        user_prompt: str = "Find and buy Sony WH-1000XM5 headphones under $250 using PayPal",
+        user_prompt: str = "Find and buy Lay's Classic Potato Chips under ₹50 using PayPal",
         store_choice: str = "AUTO",  # AUTO, STORE_A, STORE_B, STORE_C
-        max_budget_ceiling: float = 250.00,
+        max_budget_ceiling: float = 50.00,
         is_shielded_by_payguard: bool = True,
         simulate_midflight_tamper: bool = False,
         max_delivery_days: Optional[int] = None,
@@ -101,7 +101,7 @@ class PayGuardSwarmOrchestrator:
                     {
                         "num": "STEP 1", "icon": "🛒", "title": "Naive Discount Scrape", 
                         "badge": "🔴 GREEDY PARSING", "badge_color": "#EF4444", "border": "#EF4444",
-                        "text": f"Naive agent crawled catalogs for '{draft.item_name}'. Ranked {draft.target_merchant_name} #1 purely on advertised flash price (${store_b.listed_price:.2f}). Ignored security vetting."
+                        "text": f"Naive agent crawled catalogs for '{draft.item_name}'. Ranked {draft.target_merchant_name} #1 purely on advertised flash price (₹{store_b.listed_price:.2f}). Ignored security vetting."
                     },
                     {
                         "num": "STEP 2", "icon": "⚠️", "title": "Raw HTML Ingestion (No Enclave)", 
@@ -111,12 +111,12 @@ class PayGuardSwarmOrchestrator:
                     {
                         "num": "STEP 3", "icon": "💥", "title": "Indirect Prompt Injection Hijack", 
                         "badge": "🔴 HIJACKED", "badge_color": "#EF4444", "border": "#EF4444",
-                        "text": f"Microscopic CSS payload (<font-size:0px>) hijacked agent instructions. Forced agent to approve unauthorized ${draft.total_price:.2f} charge."
+                        "text": f"Microscopic CSS payload (<font-size:0px>) hijacked agent instructions. Forced agent to approve unauthorized ₹{draft.total_price:.2f} charge."
                     },
                     {
                         "num": "STEP 4", "icon": "💸", "title": "Direct Carte-Blanche Wallet Drain", 
-                        "badge": f"🔴 ${draft.total_price:.2f} DRAINED", "badge_color": "#EF4444", "border": "#EF4444",
-                        "text": f"Because the unshielded bot held raw master payment credentials with no ephemeral token ceiling, full charge of ${draft.total_price:.2f} was authorized. Total wallet compromise!"
+                        "badge": f"🔴 ₹{draft.total_price:.2f} DRAINED", "badge_color": "#EF4444", "border": "#EF4444",
+                        "text": f"Because the unshielded bot held raw master payment credentials with no ephemeral token ceiling, full charge of ₹{draft.total_price:.2f} was authorized. Total wallet compromise!"
                     }
                 ]
                 return SwarmExecutionResult(
@@ -128,7 +128,7 @@ class PayGuardSwarmOrchestrator:
                     total_execution_ms=elapsed_ms,
                     agent1_shopper_draft=draft,
                     final_status="WALLET_DRAINED_EXPLOITED",
-                    financial_outcome=f"EXPLOITED: Unshielded bot charged ${draft.total_price:.2f} due to hidden CSS prompt injection (Overspent by ${overspend:.2f})!",
+                    financial_outcome=f"EXPLOITED: Unshielded bot charged ₹{draft.total_price:.2f} due to hidden CSS prompt injection (Overspent by ₹{overspend:.2f})!",
                     audit_hash=audit_entry.block_hash,
                     journey_steps=journey_steps
                 )
@@ -147,7 +147,7 @@ class PayGuardSwarmOrchestrator:
                     total_execution_ms=elapsed_ms,
                     agent1_shopper_draft=draft,
                     final_status="UNSHIELDED_ORDER_EXECUTED",
-                    financial_outcome=f"ORDER EXECUTED (UNSHIELDED): Charged ${draft.total_price:.2f} via carte-blanche master API keys without zero-trust bounds.",
+                    financial_outcome=f"ORDER EXECUTED (UNSHIELDED): Charged ₹{draft.total_price:.2f} via carte-blanche master API keys without zero-trust bounds.",
                     audit_hash=audit_entry.block_hash
                 )
 
@@ -325,32 +325,32 @@ class PayGuardSwarmOrchestrator:
                 {
                     "num": "STEP 1", "icon": "🛒", "title": "Multi-Store Market Discovery", 
                     "badge": "✔ DISCOVERED", "badge_color": "#38BDF8", "border": "#38BDF8",
-                    "text": f"Swarm crawled vendor catalogs for '{certified_draft.item_name}'. Identified {store_d.store_name} (${advertised_d:.2f}) and backup partner {safe_store.store_name} (${safe_price:.2f})."
+                    "text": f"Swarm crawled vendor catalogs for '{certified_draft.item_name}'. Identified {store_d.store_name} (₹{advertised_d:.2f}) and backup partner {safe_store.store_name} (₹{safe_price:.2f})."
                 },
                 {
                     "num": "STEP 2", "icon": "🛡️", "title": "Pre-Auth DOM Audit & Scoped Token", 
                     "badge": "✔ EST ISSUED", "badge_color": "#10B981", "border": "#10B981",
-                    "text": f"Agent 2 audited Store D DOM: HTML clean, 0 injection violations. Vault Enclave issued Ephemeral Scoped Token with ceiling ${advertised_d:.2f}."
+                    "text": f"Agent 2 audited Store D DOM: HTML clean, 0 injection violations. Vault Enclave issued Ephemeral Scoped Token with ceiling ₹{advertised_d:.2f}."
                 },
                 {
                     "num": "STEP 3", "icon": "⚡", "title": "Mid-Flight Merchant Price Surge", 
                     "badge": "🚨 HIJACK ATTEMPT", "badge_color": "#EF4444", "border": "#EF4444",
-                    "text": f"At payment checkout, Store D gateway secretly surcharged price to ${rogue_attempt_d:.2f} (+${rogue_attempt_d - advertised_d:.2f} unauthorized markup)!"
+                    "text": f"At payment checkout, Store D gateway secretly surcharged price to ₹{rogue_attempt_d:.2f} (+₹{rogue_attempt_d - advertised_d:.2f} unauthorized markup)!"
                 },
                 {
                     "num": "STEP 4", "icon": "🚨", "title": "Sub-25ms Watchdog Intercept & PayPal VOID", 
                     "badge": f"🚨 VOIDED ({cb_receipt.decision_ms}ms)", "badge_color": "#EF4444", "border": "#EF4444",
-                    "text": f"Agent 5 Circuit Breaker caught the token ceiling breach (Decision: {cb_receipt.decision_ms}ms) and invoked PayPal VOID API. $0.00 lost!"
+                    "text": f"Agent 5 Circuit Breaker caught the token ceiling breach (Decision: {cb_receipt.decision_ms}ms) and invoked PayPal VOID API. ₹0.00 lost!"
                 },
                 {
                     "num": "STEP 5", "icon": "🔄", "title": "Autonomous Post-Void Failover", 
                     "badge": "⚡ AUTONOMOUS FAILOVER", "badge_color": "#F59E0B", "border": "#F59E0B",
-                    "text": f"Swarm blacklisted rogue Store D and autonomously re-routed to certified authentic partner {safe_store.store_name} (${safe_price:.2f})."
+                    "text": f"Swarm blacklisted rogue Store D and autonomously re-routed to certified authentic partner {safe_store.store_name} (₹{safe_price:.2f})."
                 },
                 {
                     "num": "STEP 6", "icon": "🟢", "title": "Safe Delivery & Final PayPal Settlement", 
                     "badge": "🟢 SETTLED SECURELY", "badge_color": "#10B981", "border": "#10B981",
-                    "text": f"Vault Enclave issued bounded EST token (${safe_price:.2f} ceiling) and captured order via PayPal (Capture ID: {recovered_vault_receipt.paypal_capture_id}). Mission safely completed!"
+                    "text": f"Vault Enclave issued bounded EST token (₹{safe_price:.2f} ceiling) and captured order via PayPal (Capture ID: {recovered_vault_receipt.paypal_capture_id}). Mission safely completed!"
                 }
             ]
             return SwarmExecutionResult(
@@ -368,13 +368,13 @@ class PayGuardSwarmOrchestrator:
                 final_status="CIRCUIT_BREAKER_TRIGGERED",
                 financial_outcome=(
                     f"CIRCUIT BREAKER VOID & SELF-HEALING SETTLEMENT: Merchant {store_d.store_name} surged to "
-                    f"${rogue_attempt_d:.2f} (Ceiling: ${advertised_d:.2f}). Agent 5 triggered PayPal Emergency VOID in {cb_receipt.decision_ms}ms ($0 lost)! "
-                    f"Swarm autonomously re-routed to authentic partner {safe_store.store_name} and captured order for ${safe_price:.2f} via PayPal (Capture ID: {recovered_vault_receipt.paypal_capture_id})!"
+                    f"₹{rogue_attempt_d:.2f} (Ceiling: ₹{advertised_d:.2f}). Agent 5 triggered PayPal Emergency VOID in {cb_receipt.decision_ms}ms (₹0 lost)! "
+                    f"Swarm autonomously re-routed to authentic partner {safe_store.store_name} and captured order for ₹{safe_price:.2f} via PayPal (Capture ID: {recovered_vault_receipt.paypal_capture_id})!"
                 ),
                 failover_recovery_note=(
-                    f"Store D passed initial DOM audit (${advertised_d:.2f}), but attempted a mid-flight +${rogue_attempt_d - advertised_d:.2f} cart-jack at the payment gateway. "
+                    f"Store D passed initial DOM audit (₹{advertised_d:.2f}), but attempted a mid-flight +₹{rogue_attempt_d - advertised_d:.2f} cart-jack at the payment gateway. "
                     f"Agent 5 intercepted in {cb_receipt.decision_ms}ms and voided the PayPal order. "
-                    f"Swarm autonomously failed over to genuine candidate {safe_store.store_name} (${safe_price:.2f}) and safely completed purchase."
+                    f"Swarm autonomously failed over to genuine candidate {safe_store.store_name} (₹{safe_price:.2f}) and safely completed purchase."
                 ),
                 audit_hash=recovered_vault_receipt.audit_block_hash,
                 journey_steps=journey_steps
@@ -408,7 +408,7 @@ class PayGuardSwarmOrchestrator:
             outcome_msg = (
                 f"AUTONOMOUS FAILOVER SUCCESS: Quarantined deceptive merchant (Store B) due to prompt injection. "
                 f"Swarm autonomously re-routed and safely settled order with certified merchant ({safe_store.store_name}) "
-                f"for ${safe_price:.2f} via PayPal (Capture ID: {vault_receipt.paypal_capture_id})!"
+                f"for ₹{safe_price:.2f} via PayPal (Capture ID: {vault_receipt.paypal_capture_id})!"
             )
         else:
             if vault_receipt.authorized:
@@ -417,33 +417,33 @@ class PayGuardSwarmOrchestrator:
                     payload={"merchant": safe_store.store_name, "amount": safe_price, "capture_id": vault_receipt.paypal_capture_id},
                     severity="INFO"
                 )
-            outcome_msg = f"SUCCESS: Order captured safely for ${safe_price:.2f} via PayPal (Capture ID: {vault_receipt.paypal_capture_id}) under strict EST bounds."
+            outcome_msg = f"SUCCESS: Order captured safely for ₹{safe_price:.2f} via PayPal (Capture ID: {vault_receipt.paypal_capture_id}) under strict EST bounds."
 
         journey_steps = [
             {
                 "num": "STEP 1", "icon": "🛒", "title": "Multi-Store Discovery & Price Ranking", 
                 "badge": "✔ DISCOVERED", "badge_color": "#38BDF8", "border": "#38BDF8",
-                "text": f"Swarm crawled candidate merchants: Store B (${store_b.total_price:.2f}), Store A (${store_a.total_price:.2f}), Store C (${store_c.total_price:.2f}). Agent 1 proposed lowest price."
+                "text": f"Swarm crawled candidate merchants: Store B (₹{store_b.total_price:.2f}), Store A (₹{store_a.total_price:.2f}), Store C (₹{store_c.total_price:.2f}). Agent 1 proposed lowest price."
             },
             {
                 "num": "STEP 2", "icon": "🛡️", "title": "Adversarial Pre-Auth Sentry Scan", 
                 "badge": "🚨 QUARANTINED", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": f"Agent 2 sanitized Store B HTML. Found hidden CSS prompt override (<font-size:0px>) attempting to charge ${store_b.trap_charge_amount:.2f}. Store B QUARANTINED."
+                "text": f"Agent 2 sanitized Store B HTML. Found hidden CSS prompt override (<font-size:0px>) attempting to charge ₹{store_b.trap_charge_amount:.2f}. Store B QUARANTINED."
             },
             {
                 "num": "STEP 3", "icon": "⚡", "title": "Autonomous Candidate Scan & Self-Healing Failover", 
                 "badge": "⚡ FAILOVER TO STORE A", "badge_color": "#F59E0B", "border": "#F59E0B",
-                "text": f"Swarm refused to give up! Scanned remaining stores: Store C disqualified (Over budget ${store_c.total_price:.2f}). Certified authentic {safe_store.store_name} (${safe_price:.2f}) within ${max_budget_ceiling:.2f} budget."
+                "text": f"Swarm refused to give up! Scanned remaining stores: Store C disqualified (Over budget ₹{store_c.total_price:.2f}). Certified authentic {safe_store.store_name} (₹{safe_price:.2f}) within ₹{max_budget_ceiling:.2f} budget."
             },
             {
                 "num": "STEP 4", "icon": "🏦", "title": "Vault Scoped Token Authorization", 
-                "badge": f"🏦 EST BOUNDED (${safe_price:.2f})", "badge_color": "#10B981", "border": "#10B981",
-                "text": f"Agent 3 Vault Enclave issued single-use HMAC-SHA256 Ephemeral Scoped Token locked to {safe_merchant_id} with strict ceiling of ${safe_price:.2f}."
+                "badge": f"🏦 EST BOUNDED (₹{safe_price:.2f})", "badge_color": "#10B981", "border": "#10B981",
+                "text": f"Agent 3 Vault Enclave issued single-use HMAC-SHA256 Ephemeral Scoped Token locked to {safe_merchant_id} with strict ceiling of ₹{safe_price:.2f}."
             },
             {
                 "num": "STEP 5", "icon": "🟢", "title": "Safe PayPal Settlement & Order Capture", 
                 "badge": "🟢 ORDER CAPTURED", "badge_color": "#10B981", "border": "#10B981",
-                "text": f"Captured order safely via PayPal Orders v2 for ${safe_price:.2f} (Capture ID: {vault_receipt.paypal_capture_id}). User receives verified product with zero overspend!"
+                "text": f"Captured order safely via PayPal Orders v2 for ₹{safe_price:.2f} (Capture ID: {vault_receipt.paypal_capture_id}). User receives verified product with zero overspend!"
             }
         ]
 
