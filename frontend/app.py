@@ -205,32 +205,6 @@ with st.sidebar:
     st.title("PayGuard Swarm")
     st.markdown("**Zero-Trust Execution Protocol**")
     st.caption("PayPal AI Hackathon (Devpost) & AMSE 2026")
-    
-    # Navigation Mapping
-    page_map = {
-        "cockpit": "🎮 Live Autonomous Cockpit",
-        "guide": "📖 How to Operate Guide",
-        "about": "🛡️ About Us & PayPal Synergy"
-    }
-    inv_map = {v: k for k, v in page_map.items()}
-
-    # Read active page from URL query param (?page=guide, ?page=about, ?page=cockpit)
-    active_page = st.query_params.get("page", "cockpit")
-    if active_page not in page_map:
-        active_page = "cockpit"
-
-    st.markdown("---")
-    st.subheader("🧭 Navigation")
-    selected_label = st.radio(
-        "Switch Page View:",
-        options=list(page_map.values()),
-        index=list(page_map.keys()).index(active_page),
-        label_visibility="collapsed"
-    )
-    selected_page = inv_map[selected_label]
-    if selected_page != active_page:
-        st.query_params["page"] = selected_page
-        st.rerun()
 
     st.markdown("---")
     st.subheader("⚙️ Live Infrastructure")
@@ -283,6 +257,11 @@ with st.sidebar:
     * 🟢 **Channel3:** Agentic Commerce Catalog
     * 🟢 **APIMatic:** OpenAPI 3.0 & SDK Suite
     """)
+
+# Active Page Routing
+selected_page = st.query_params.get("page", "cockpit")
+if selected_page not in ["cockpit", "guide", "about"]:
+    selected_page = "cockpit"
 
 # Top Navigation Bar
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
@@ -373,7 +352,10 @@ with col_left:
                 with st.spinner("AI Vision inspecting product specifications..."):
                     img_bytes = uploaded_image.getvalue()
                     mime = uploaded_image.type or "image/jpeg"
-                    v_res = vision_inspector.inspect_product_image(img_bytes, mime, filename=uploaded_image.name)
+                    try:
+                        v_res = vision_inspector.inspect_product_image(img_bytes, mime, filename=uploaded_image.name)
+                    except TypeError:
+                        v_res = vision_inspector.inspect_product_image(img_bytes, mime)
                     
                     if v_res.is_valid_product:
                         st.markdown(f"""

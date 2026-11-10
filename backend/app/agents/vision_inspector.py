@@ -176,11 +176,14 @@ class MultimodalVisionInspector:
         )
 
     @classmethod
-    def inspect_product_image(cls, image_bytes: bytes, mime_type: str = "image/jpeg", filename: str = "") -> VisionProductResult:
+    def inspect_product_image(cls, image_bytes: bytes, mime_type: str = "image/jpeg", filename: str = "", *args, **kwargs) -> VisionProductResult:
         """
         Inspect product image using Gemini 2.5 Flash Vision if key is available,
         with seamless failover to the local computer-vision heuristic engine.
+        Accepts *args and **kwargs for universal backward compatibility.
         """
+        # If filename was passed via kwargs or positionally
+        fn = filename or kwargs.get("filename", "")
         api_key = settings.GEMINI_API_KEY
         if not api_key:
             return cls._heuristic_visual_analysis(image_bytes, filename)
