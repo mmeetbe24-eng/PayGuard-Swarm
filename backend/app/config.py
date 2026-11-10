@@ -32,22 +32,27 @@ class Settings:
     DESCRIPTION: str = "Zero-Trust Multi-Agent Protocol for Safe Autonomous Payments on PayPal"
     
     # Gemini Configuration
-    DEFAULT_GEMINI_MODEL: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.5-flash")
+    DEFAULT_GEMINI_MODEL: str = os.getenv("DEFAULT_GEMINI_MODEL", "gemini-2.0-flash")
+    DEFAULT_FALLBACK_KEY: str = ""
 
     @property
     def GEMINI_API_KEY(self) -> str:
         key = os.getenv("GEMINI_API_KEY", "")
-        if key:
+        if key and len(key) > 8:
             return key
         try:
             import streamlit as st
             if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
-                return str(st.secrets["GEMINI_API_KEY"])
+                val = str(st.secrets["GEMINI_API_KEY"]).strip()
+                if val:
+                    return val
             if hasattr(st, "session_state") and "runtime_gemini_key" in st.session_state:
-                return str(st.session_state["runtime_gemini_key"])
+                val = str(st.session_state["runtime_gemini_key"]).strip()
+                if val:
+                    return val
         except Exception:
             pass
-        return ""
+        return self.DEFAULT_FALLBACK_KEY
     
     # PayPal Sandbox Configuration
     PAYPAL_MODE: str = os.getenv("PAYPAL_MODE", "sandbox")

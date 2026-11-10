@@ -23,6 +23,10 @@ if str(BASE_DIR) not in sys.path:
 
 from backend.app.config import settings
 
+# Automatically ensure global Gemini API key is available in OS environment
+if not os.getenv("GEMINI_API_KEY") and settings.GEMINI_API_KEY:
+    os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
+
 # Force deep reload of all sub-modules so Streamlit never runs stale cached code
 import backend.app.paypal.client as paypal_mod
 importlib.reload(paypal_mod)
@@ -314,6 +318,7 @@ with st.sidebar:
     
     if settings.GEMINI_API_KEY:
         st.success(f"🟢 AI Core: Google Gemini Active ({settings.DEFAULT_GEMINI_MODEL})")
+        st.caption("Mode: `LIVE_MULTIMODAL_CLOUD_VISION`")
     else:
         st.warning("⚠️ AI Core: Local Rule Engine")
         with st.expander("🔑 Add Gemini API Key (Live AI Vision)", expanded=False):
