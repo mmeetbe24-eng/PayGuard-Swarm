@@ -128,8 +128,20 @@ class MultimodalVisionInspector:
             dark_ratio = dark_tech_count / total
             metallic_ratio = metallic_silver / total
 
-            # Wrist watch signature: vertical band aspect ratio or metallic silver with dial
-            if (aspect > 1.15 or aspect < 0.85) and (metallic_ratio > 0.12 or dark_ratio > 0.10):
+            # 1. Tall vertical cylinder signature (Water bottle, flask, tumbler):
+            if aspect > 1.75:
+                return VisionProductResult(
+                    is_valid_product=True,
+                    product_title="Vacuum Insulated Stainless Steel Water Bottle",
+                    category="Home & Kitchen",
+                    color_or_style="Matte Finish Thermal Flask / Bottle",
+                    estimated_price_usd=799.0,
+                    search_directive="Find and buy Stainless Steel Water Bottle under ₹800 using PayPal",
+                    confidence_notes=f"Visual cylindrical aspect ratio ({aspect:.2f}) matching drinkware & thermal bottles."
+                )
+
+            # 2. Wrist watch signature: balanced aspect ratio with metallic steel dial & bracelet:
+            if 0.85 <= aspect <= 1.35 and (metallic_ratio > 0.18 or (dark_ratio > 0.15 and metallic_ratio > 0.08)):
                 return VisionProductResult(
                     is_valid_product=True,
                     product_title="Classic Stainless Steel Men's Wrist Watch",

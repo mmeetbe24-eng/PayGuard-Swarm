@@ -447,26 +447,83 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
         except Exception:
             pass
 
-    # 2. Live Cloud Multimodal Vision (Google Gemini 2.0 / 1.5 Flash)
+    # 2. Live Cloud Multimodal Vision (Google Gemini 2.0 / 1.5 Flash via REST + SDK)
     if api_key:
+        # A. Try Direct HTTP REST API (handles both standard AIzaSy keys and GCP OAuth/Bearer tokens)
+        try:
+            import base64, requests, re, json
+            b64_img = base64.b64encode(img_bytes).decode("utf-8")
+            rest_prompt = """
+            Analyze the product in this photo with high precision.
+            Return strictly a JSON object with NO markdown formatting:
+            {
+              "product_title": "<Specific product name, e.g. 'Insulated Stainless Steel Water Bottle', 'Titan Quartz Wrist Watch', 'Pilot Rollerball Pen', 'Lay\\'s Classic Potato Chips'>",
+              "category": "<e.g. Home & Kitchen, Watches & Jewelry, Office Supplies, Food & Grocery, Tech>",
+              "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 799 for bottle, 4500 for watch, 120 for pen, 50 for chips>
+            }
+            """
+            rest_payload = {
+                "contents": [{
+                    "parts": [
+                        {"text": rest_prompt},
+                        {"inline_data": {"mime_type": mime_type, "data": b64_img}}
+                    ]
+                }]
+            }
+
+            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]:
+                auth_attempts = [
+                    # Attempt 1: OAuth Bearer header
+                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}),
+                    # Attempt 2: x-goog-api-key header
+                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", {"x-goog-api-key": api_key, "Content-Type": "application/json"}),
+                    # Attempt 3: Query parameter key
+                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={api_key}", {"Content-Type": "application/json"})
+                ]
+
+                for url, headers in auth_attempts:
+                    try:
+                        resp = requests.post(url, json=rest_payload, headers=headers, timeout=8)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                content_parts = candidates[0].get("content", {}).get("parts", [])
+                                if content_parts and "text" in content_parts[0]:
+                                    raw_txt = content_parts[0]["text"]
+                                    m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
+                                    if m:
+                                        d = json.loads(m.group(0))
+                                        title = str(d.get("product_title", "")).strip().replace('\\', '')
+                                        b = float(d.get("suggested_budget_inr", 1000.0))
+                                        cat = str(d.get("category", "General Retail")).strip()
+                                        if title and len(title) > 2:
+                                            st.session_state["gemini_last_error"] = ""
+                                            return title, max(10.0, b), cat, "gemini"
+                        else:
+                            st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:120]}"
+                    except Exception as err:
+                        st.session_state["gemini_last_error"] = str(err)[:120]
+        except Exception as e:
+            st.session_state["gemini_last_error"] = str(e)[:120]
+
+        # B. Fallback to Official Google GenAI SDK
         try:
             from google import genai
             from google.genai import types
             import re, json
             client = genai.Client(api_key=api_key)
             prompt = """
-            You are an expert e-commerce catalog visual recognition engine.
-            Analyze the product in this photo with high precision.
-            
-            Return strictly a valid JSON object with NO markdown formatting:
+            Identify the product in this photo with high precision.
+            Return strictly a JSON object:
             {
-              "product_title": "<Specific product name, e.g. 'Classic Analog Wrist Watch', 'Pilot G2 Rollerball Pen', 'Samsung Galaxy S24 Ultra', 'Lay\\'s Classic Potato Chips'>",
-              "category": "<e.g. Watches & Accessories, Office Supplies, Mobiles & Tech, Food & Grocery, Fashion>",
-              "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 4500 for a watch, 120 for a pen, 35000 for a phone, 50 for chips>
+              "product_title": "<Specific product name>",
+              "category": "<Category>",
+              "suggested_budget_inr": <Price in INR ₹>
             }
             """
             image_part = types.Part.from_bytes(data=img_bytes, mime_type=mime_type)
-            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]:
+            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash"]:
                 try:
                     resp = client.models.generate_content(model=model_id, contents=[prompt, image_part])
                     if resp and resp.text:
@@ -477,30 +534,13 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
                             b = float(d.get("suggested_budget_inr", 1500.0))
                             cat = str(d.get("category", "General Retail")).strip()
                             if title and len(title) > 2:
+                                st.session_state["gemini_last_error"] = ""
                                 return title, max(10.0, b), cat, "gemini"
-                except Exception:
+                except Exception as ex:
+                    st.session_state["gemini_last_error"] = str(ex)[:120]
                     continue
-        except Exception:
-            try:
-                import google.generativeai as genai_legacy
-                import re, json
-                genai_legacy.configure(api_key=api_key)
-                m_legacy = genai_legacy.GenerativeModel("gemini-1.5-flash")
-                resp = m_legacy.generate_content([
-                    "Identify this product. Return JSON only: {\"product_title\": \"<name>\", \"suggested_budget_inr\": <price in INR>, \"category\": \"<cat>\"}",
-                    {"mime_type": mime_type, "data": img_bytes}
-                ])
-                if resp and resp.text:
-                    m = re.search(r'\{.*\}', resp.text, re.DOTALL)
-                    if m:
-                        d = json.loads(m.group(0))
-                        title = str(d.get("product_title", "")).strip()
-                        b = float(d.get("suggested_budget_inr", 1500.0))
-                        cat = str(d.get("category", "General Retail")).strip()
-                        if title and len(title) > 2:
-                            return title, max(10.0, b), cat, "gemini"
-            except Exception:
-                pass
+        except Exception as ex:
+            st.session_state["gemini_last_error"] = str(ex)[:120]
 
     # 3. Intelligent Computer Vision Chromatic & Heuristic Fallback
     try:
@@ -616,6 +656,11 @@ with col_left:
                     <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">🎯 Automatically applied to your shopping directive! Adjust your budget ceiling below if desired:</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                if eng != "gemini" and st.session_state.get("gemini_last_error"):
+                    with st.expander("⚠️ Gemini API Cloud Log", expanded=False):
+                        st.caption(f"Google returned: `{st.session_state['gemini_last_error']}`")
+                        st.caption("Standard Gemini developer API keys from aistudio.google.com/apikey begin with `AIzaSy...`.")
                 
                 col_v1, col_v2 = st.columns([2, 1])
                 with col_v1:
