@@ -22,7 +22,7 @@ try:
     if hasattr(st, "secrets"):
         for k, v in st.secrets.items():
             if isinstance(v, (str, int, float)):
-                os.environ.setdefault(str(k), str(v))
+                os.environ[str(k)] = str(v)
 except Exception:
     pass
 
@@ -37,21 +37,43 @@ class Settings:
 
     @property
     def GEMINI_API_KEY(self) -> str:
-        key = os.getenv("GEMINI_API_KEY", "")
-        if key and len(key) > 8:
-            return key
+        # 1. Environment variable check
+        for env_k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY"]:
+            val = os.getenv(env_k, "").strip()
+            if val and len(val) > 8:
+                return val
+        
+        # 2. Streamlit Cloud Secrets check
         try:
             import streamlit as st
-            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
-                val = str(st.secrets["GEMINI_API_KEY"]).strip()
-                if val:
-                    return val
+            if hasattr(st, "secrets"):
+                for sec_k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY"]:
+                    if sec_k in st.secrets:
+                        val = str(st.secrets[sec_k]).strip()
+                        if val and len(val) > 8:
+                            os.environ["GEMINI_API_KEY"] = val
+                            return val
+                # Case-insensitive / substring search in secrets
+                for k in st.secrets.keys():
+                    if "gemini" in str(k).lower() and "key" in str(k).lower():
+                        val = str(st.secrets[k]).strip()
+                        if val and len(val) > 8:
+                            os.environ["GEMINI_API_KEY"] = val
+                            return val
+        except Exception:
+            pass
+
+        # 3. Streamlit runtime session state check
+        try:
+            import streamlit as st
             if hasattr(st, "session_state") and "runtime_gemini_key" in st.session_state:
                 val = str(st.session_state["runtime_gemini_key"]).strip()
-                if val:
+                if val and len(val) > 8:
+                    os.environ["GEMINI_API_KEY"] = val
                     return val
         except Exception:
             pass
+
         return self.DEFAULT_FALLBACK_KEY
     
     # PayPal Sandbox Configuration

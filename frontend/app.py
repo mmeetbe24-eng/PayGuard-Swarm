@@ -464,7 +464,26 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_directi
                 except Exception:
                     continue
         except Exception:
-            pass
+            try:
+                import google.generativeai as genai_legacy
+                import re, json
+                genai_legacy.configure(api_key=api_key)
+                m_legacy = genai_legacy.GenerativeModel("gemini-1.5-flash")
+                resp = m_legacy.generate_content([
+                    "Identify this product. Return JSON only: {\"product_title\": \"<name>\", \"suggested_budget_inr\": <price in INR>, \"category\": \"<cat>\"}",
+                    {"mime_type": "image/jpeg", "data": img_bytes}
+                ])
+                if resp and resp.text:
+                    m = re.search(r'\{.*\}', resp.text, re.DOTALL)
+                    if m:
+                        d = json.loads(m.group(0))
+                        title = str(d.get("product_title", "")).strip()
+                        b = float(d.get("suggested_budget_inr", 1500.0))
+                        cat = str(d.get("category", "General Retail")).strip()
+                        if title and len(title) > 2:
+                            return title, max(10.0, b), cat
+            except Exception:
+                pass
 
     # 3. Contextual Inference: If the user already typed a specific product in the directive,
     # honor the user's explicit intent
@@ -535,30 +554,36 @@ with col_left:
     )
     
     # 2. Visual Product Search (Clean, expandable card with multimodal AI inspection & custom budget)
-    with st.expander("📸 Visual Product Search (Upload Image Reference)", expanded=False):
+    with st.expander("📸 Visual Product Search (Upload Image Reference)", expanded=True):
         uploaded_image = st.file_uploader(
             "Upload product photo / reference", 
             type=["jpg", "jpeg", "png", "webp"],
+            key="product_visual_uploader",
             help="AI visual inspection scans the photo, identifies product specs, and lets you choose your budget in Rupees!"
         )
-        if uploaded_image:
+        if uploaded_image is not None:
             img_c1, img_c2 = st.columns([1, 2])
             with img_c1:
-                st.image(uploaded_image, width=130, caption="Visual Reference")
+                st.image(uploaded_image, width=140, caption="Uploaded Image")
             with img_c2:
                 img_bytes = uploaded_image.getvalue()
-                detected_name, suggested_budget, detected_cat = classify_visual_product(
-                    img_bytes, 
-                    uploaded_image.name, 
-                    active_directive=user_prompt_input, 
-                    active_budget=st.session_state.get("active_budget", 50.0)
-                )
+                with st.spinner("🔍 AI Multimodal Vision analyzing product image..."):
+                    detected_name, suggested_budget, detected_cat = classify_visual_product(
+                        img_bytes, 
+                        uploaded_image.name, 
+                        active_directive=user_prompt_input, 
+                        active_budget=st.session_state.get("active_budget", 50.0)
+                    )
                 
+                ai_mode_badge = "🌐 Gemini 2.0 Live Cloud Vision" if settings.GEMINI_API_KEY else "⚡ Smart Heuristic Classifier"
                 st.markdown(f"""
                 <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 12px 14px; border-radius: 8px; margin-bottom: 10px;">
-                    <div style="font-weight: 700; color: #34D399; font-size: 0.98rem;">✅ AI Classified: {detected_name}</div>
-                    <div style="font-size: 0.84rem; color: #CBD5E1; margin-top: 3px;">📦 Category: <strong>{detected_cat}</strong> | 🏷️ Suggested Budget: <strong style="color: #38BDF8;">₹{suggested_budget:.2f}</strong></div>
-                    <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">Customize the product name or set your own spending ceiling below:</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; color: #34D399; font-size: 0.98rem;">✅ AI Classified: {detected_name}</span>
+                        <span style="font-size: 0.72rem; background: rgba(56, 189, 248, 0.2); color: #38BDF8; padding: 2px 8px; border-radius: 12px;">{ai_mode_badge}</span>
+                    </div>
+                    <div style="font-size: 0.84rem; color: #CBD5E1; margin-top: 4px;">📦 Category: <strong>{detected_cat}</strong> | 🏷️ Suggested Budget: <strong style="color: #38BDF8;">₹{suggested_budget:.2f}</strong></div>
+                    <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">Confirm or edit below, then click the button to set your target product:</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -568,7 +593,7 @@ with col_left:
                 with col_v2:
                     custom_v_budget = st.number_input("2. Set Budget Ceiling (₹)", value=float(suggested_budget), min_value=1.0, max_value=500000.0, step=5.0, key=f"v_budget_{st.session_state['form_epoch']}")
                 
-                if st.button("🚀 Confirm Product & Budget (₹)", key=f"btn_apply_vision_{st.session_state['form_epoch']}", type="primary", use_container_width=True):
+                if st.button("🚀 Apply Product & Budget to Directive (₹)", key=f"btn_apply_vision_{st.session_state['form_epoch']}", type="primary", use_container_width=True):
                     st.session_state["custom_directive"] = f"Find and buy {custom_v_title} under ₹{custom_v_budget:.0f} using PayPal"
                     st.session_state["active_budget"] = float(custom_v_budget)
                     st.session_state["form_epoch"] += 1

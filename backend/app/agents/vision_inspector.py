@@ -1,23 +1,5 @@
 import json
 import re
-import logging
-from typing import Optional, Dict, Any
-from pydantic import BaseModel
-from backend.app.config import settings
-
-logger = logging.getLogger(__name__)
-
-class VisionProductResult(BaseModel):
-    is_valid_product: bool
-    product_title: str
-    category: str
-    color_or_style: str
-    estimated_price_usd: float
-    search_directive: str
-    confidence_notes: str
-
-import json
-import re
 import io
 import logging
 from typing import Optional, Dict, Any
