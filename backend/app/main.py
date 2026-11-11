@@ -117,6 +117,25 @@ def dispatch_to_zapier(body: dict = Body(...)):
     res = zapier_dispatcher.dispatch_event(event_type=event_type, payload=payload, severity=severity)
     return res
 
+@app.post("/api/v1/logistics/webhook")
+def ingest_carrier_webhook(body: dict = Body(...)):
+    """
+    Agent 6 Logistics Gateway Webhook:
+    Ingests live carrier checkpoint events (e.g. from BlueDart, Delhivery, FedEx or Postman test collection)
+    and cryptographically audits delivery state on the immutable ledger.
+    """
+    import time
+    waybill = body.get("waybill", body.get("tracking_number", "UNKNOWN"))
+    event = body.get("event", "IN_TRANSIT_CHECKPOINT")
+    otp = body.get("otp", "")
+    
+    audit_ledger.record_event(
+        agent="Agent 6 (Fulfillment Guardian)",
+        event_type=f"INBOUND_CARRIER_WEBHOOK_{event}",
+        payload={"waybill": waybill, "event": event, "otp": otp}
+    )
+    return {"status": "INGESTED", "waybill": waybill, "event": event, "timestamp": time.time()}
+
 @app.get("/api/v1/integrations/channel3/search")
 def search_channel3_catalog(query: str = "Sony WH-1000XM5", budget: float = 250.00):
     """
