@@ -1376,6 +1376,28 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
                 </div>
                 """, unsafe_allow_html=True)
 
+        # Interactive State Simulator for Live Hackathon Demonstration
+        st.markdown("##### 🎮 Live Fulfillment Lifecycle Simulator (Test State Transitions)")
+        sim_c1, sim_c2, sim_c3 = st.columns(3)
+        with sim_c1:
+            if st.button("🚚 Advance ➔ Out-for-Delivery", key="btn_sim_out_delivery", use_container_width=True):
+                from backend.app.agents.fulfillment_tracker import fulfillment_tracker
+                fulfillment_tracker.advance_to_out_for_delivery(ship)
+                st.success(f"✔ Milestone updated! Package is now Out for Delivery. Handover OTP #{ship.otp_code} dispatched via Zapier SMS.")
+                st.rerun()
+        with sim_c2:
+            if st.button("✅ Confirm Delivery (Verify OTP)", key="btn_sim_delivered", use_container_width=True, type="primary"):
+                from backend.app.agents.fulfillment_tracker import fulfillment_tracker
+                fulfillment_tracker.mark_delivered(ship)
+                st.success(f"✔ Delivery successfully verified! Handover OTP #{ship.otp_code} confirmed. Tamper-evident receipt #{ship.security_seal_hash} committed to Audit Ledger.")
+                st.rerun()
+        with sim_c3:
+            if st.button("🚨 Simulate Transit Delay (SLA Breach)", key="btn_sim_sla_breach", use_container_width=True):
+                from backend.app.agents.fulfillment_tracker import fulfillment_tracker
+                fulfillment_tracker.trigger_sla_breach_penalty(ship, refund_amount=200.0)
+                st.warning(f"⚠️ SLA Breach triggered! Delivery delayed past SLA window. Agent 6 autonomously initiated a ₹200.00 PayPal compensation refund for customer.")
+                st.rerun()
+
         # SLA Guarantee Protection Note
         st.info("🛡️ **PayGuard Non-Custodial Delivery Guarantee:** Agent 6 monitors live courier telemetry. If transit time exceeds promised SLA window, Agent 6 autonomously invokes PayPal Dispute & Refund APIs to claim compensation for the customer.")
 

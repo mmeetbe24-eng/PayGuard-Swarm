@@ -178,4 +178,85 @@ class FulfillmentTrackerAgent:
 
         return shipment
 
+    def advance_to_out_for_delivery(self, shipment: ShipmentTracking) -> ShipmentTracking:
+        """Transitions milestone 3 to COMPLETED, milestone 4 to IN_PROGRESS with OTP."""
+        now_str = datetime.now().strftime("%H:%M:%S")
+        shipment.current_status = "OUT_FOR_DELIVERY"
+        shipment.progress_pct = 90
+        if len(shipment.milestones) >= 4:
+            shipment.milestones[2].status = "COMPLETED"
+            shipment.milestones[3].status = "IN_PROGRESS"
+            shipment.milestones[3].timestamp = f"Active ({now_str})"
+            shipment.milestones[3].description = f"Last-mile delivery rider assigned! Secure Handover OTP #{shipment.otp_code} dispatched to customer via SMS."
+        
+        audit_ledger.record_event(
+            agent="Agent 6 (Fulfillment Guardian)",
+            event_type="PACKAGE_OUT_FOR_DELIVERY",
+            payload={
+                "waybill": shipment.tracking_number,
+                "carrier": shipment.carrier_name,
+                "status": "OUT_FOR_DELIVERY",
+                "otp": shipment.otp_code,
+                "sms_dispatched": True
+            }
+        )
+        zapier_dispatcher.dispatch_event(
+            event_type="PACKAGE_OUT_FOR_DELIVERY_SMS",
+            payload={"waybill": shipment.tracking_number, "otp": shipment.otp_code, "action": "SMS_SENT_TO_CUSTOMER"},
+            severity="INFO"
+        )
+        return shipment
+
+    def mark_delivered(self, shipment: ShipmentTracking) -> ShipmentTracking:
+        """Completes all milestones, sets status to DELIVERED with verified cryptographic seal."""
+        now_str = datetime.now().strftime("%H:%M:%S")
+        shipment.current_status = "DELIVERED"
+        shipment.progress_pct = 100
+        for m in shipment.milestones:
+            m.status = "COMPLETED"
+        if len(shipment.milestones) >= 4:
+            shipment.milestones[3].timestamp = f"Delivered at {now_str}"
+            shipment.milestones[3].description = f"Package successfully handed over at customer doorstep. Handover OTP #{shipment.otp_code} verified. Tamper seal intact."
+
+        audit_ledger.record_event(
+            agent="Agent 6 (Fulfillment Guardian)",
+            event_type="PACKAGE_DELIVERY_CONFIRMED",
+            payload={
+                "waybill": shipment.tracking_number,
+                "carrier": shipment.carrier_name,
+                "seal": shipment.security_seal_hash,
+                "otp_verified": True,
+                "final_state": "DELIVERED"
+            }
+        )
+        zapier_dispatcher.dispatch_event(
+            event_type="DELIVERY_CONFIRMED_RECEIPT",
+            payload={"waybill": shipment.tracking_number, "seal": shipment.security_seal_hash, "otp_verified": True},
+            severity="INFO"
+        )
+        return shipment
+
+    def trigger_sla_breach_penalty(self, shipment: ShipmentTracking, refund_amount: float = 200.0) -> ShipmentTracking:
+        """Simulates SLA deadline breach, triggers autonomous PayPal compensation refund."""
+        shipment.sla_penalty_risk = True
+        shipment.current_status = "SLA_BREACH_PENALTY_REFUNDED"
+        
+        audit_ledger.record_event(
+            agent="Agent 6 (Fulfillment Guardian)",
+            event_type="DELIVERY_SLA_BREACH_PENALTY",
+            payload={
+                "waybill": shipment.tracking_number,
+                "merchant": shipment.merchant_name,
+                "penalty_refund_inr": refund_amount,
+                "paypal_action": "AUTONOMOUS_PARTIAL_REFUND_INVOKED",
+                "reason": "Carrier transit exceeded promised SLA window"
+            }
+        )
+        zapier_dispatcher.dispatch_event(
+            event_type="SLA_BREACH_CUSTOMER_COMPENSATION",
+            payload={"refund_amount": f"₹{refund_amount:.2f}", "order_id": shipment.order_id, "waybill": shipment.tracking_number},
+            severity="WARNING"
+        )
+        return shipment
+
 fulfillment_tracker = FulfillmentTrackerAgent()
