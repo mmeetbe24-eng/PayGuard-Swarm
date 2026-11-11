@@ -95,12 +95,20 @@ class MultimodalVisionInspector:
 
         # 2. Computer Vision: Inspect pixel chromatic distribution via PIL
         try:
-            from PIL import Image
+            from PIL import Image, ImageChops
             img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            w, h = img.size
+            
+            # Crop background whitespace to calculate TRUE foreground object aspect ratio
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            diff = ImageChops.difference(img, bg)
+            bbox = diff.getbbox()
+            cropped = img.crop(bbox) if bbox else img
+            
+            w, h = cropped.size
             aspect = h / max(1, w)
-            # Downsample for rapid histogram analysis
-            thumb = img.resize((50, 50))
+            
+            # Downsample cropped object for rapid histogram analysis
+            thumb = cropped.resize((50, 50))
             pixels = list(thumb.getdata())
             total = len(pixels)
 
