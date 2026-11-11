@@ -449,7 +449,7 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
 
     # 2. Live Cloud Multimodal Vision (Google Gemini 2.0 / 1.5 Flash via REST + SDK)
     if api_key:
-        # A. Try Direct HTTP REST API (handles both standard AIzaSy keys and GCP OAuth/Bearer tokens)
+        # A. Try Direct HTTP REST API (handles standard AIzaSy keys and GCP OAuth/Bearer tokens)
         try:
             import base64, requests, re, json
             b64_img = base64.b64encode(img_bytes).decode("utf-8")
@@ -462,57 +462,73 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
               "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 799 for bottle, 4500 for watch, 120 for pen, 50 for chips>
             }
             """
+            # Strict camelCase for Google Generative Language REST JSON format
             rest_payload = {
                 "contents": [{
                     "parts": [
                         {"text": rest_prompt},
-                        {"inline_data": {"mime_type": mime_type, "data": b64_img}}
+                        {
+                            "inlineData": {
+                                "mimeType": mime_type,
+                                "data": b64_img
+                            }
+                        }
                     ]
                 }]
             }
 
-            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]:
-                auth_attempts = [
-                    # Attempt 1: OAuth Bearer header
-                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}),
-                    # Attempt 2: x-goog-api-key header
-                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", {"x-goog-api-key": api_key, "Content-Type": "application/json"}),
-                    # Attempt 3: Query parameter key
-                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={api_key}", {"Content-Type": "application/json"})
-                ]
+            model_candidates = [
+                "gemini-2.0-flash",
+                "gemini-2.0-flash-exp",
+                "gemini-1.5-flash-latest",
+                "gemini-1.5-flash",
+                "gemini-1.5-pro-latest"
+            ]
 
-                for url, headers in auth_attempts:
-                    try:
-                        resp = requests.post(url, json=rest_payload, headers=headers, timeout=8)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            candidates = data.get("candidates", [])
-                            if candidates:
-                                content_parts = candidates[0].get("content", {}).get("parts", [])
-                                if content_parts and "text" in content_parts[0]:
-                                    raw_txt = content_parts[0]["text"]
-                                    m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
-                                    if m:
-                                        d = json.loads(m.group(0))
-                                        title = str(d.get("product_title", "")).strip().replace('\\', '')
-                                        b = float(d.get("suggested_budget_inr", 1000.0))
-                                        cat = str(d.get("category", "General Retail")).strip()
-                                        if title and len(title) > 2:
-                                            st.session_state["gemini_last_error"] = ""
-                                            return title, max(10.0, b), cat, "gemini"
-                        else:
-                            st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:120]}"
-                    except Exception as err:
-                        st.session_state["gemini_last_error"] = str(err)[:120]
+            for model_id in model_candidates:
+                # Try both v1beta and v1 endpoints
+                for api_ver in ["v1beta", "v1"]:
+                    auth_attempts = [
+                        # Attempt 1: Standard URL query param
+                        (f"https://generativelanguage.googleapis.com/{api_ver}/models/{model_id}:generateContent?key={api_key}", {"Content-Type": "application/json"}),
+                        # Attempt 2: x-goog-api-key header
+                        (f"https://generativelanguage.googleapis.com/{api_ver}/models/{model_id}:generateContent", {"x-goog-api-key": api_key, "Content-Type": "application/json"}),
+                        # Attempt 3: OAuth Bearer header
+                        (f"https://generativelanguage.googleapis.com/{api_ver}/models/{model_id}:generateContent", {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+                    ]
+
+                    for url, headers in auth_attempts:
+                        try:
+                            resp = requests.post(url, json=rest_payload, headers=headers, timeout=8)
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                candidates = data.get("candidates", [])
+                                if candidates:
+                                    content_parts = candidates[0].get("content", {}).get("parts", [])
+                                    if content_parts and "text" in content_parts[0]:
+                                        raw_txt = content_parts[0]["text"]
+                                        m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
+                                        if m:
+                                            d = json.loads(m.group(0))
+                                            title = str(d.get("product_title", "")).strip().replace('\\', '')
+                                            b = float(d.get("suggested_budget_inr", 1000.0))
+                                            cat = str(d.get("category", "General Retail")).strip()
+                                            if title and len(title) > 2:
+                                                st.session_state["gemini_last_error"] = ""
+                                                return title, max(10.0, b), cat, "gemini"
+                            else:
+                                st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:120]}"
+                        except Exception as err:
+                            st.session_state["gemini_last_error"] = str(err)[:120]
         except Exception as e:
             st.session_state["gemini_last_error"] = str(e)[:120]
 
-        # B. Fallback to Official Google GenAI SDK
+        # B. Fallback to Official Google GenAI SDK with v1beta forced
         try:
             from google import genai
             from google.genai import types
             import re, json
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
             prompt = """
             Identify the product in this photo with high precision.
             Return strictly a JSON object:
@@ -523,7 +539,7 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
             }
             """
             image_part = types.Part.from_bytes(data=img_bytes, mime_type=mime_type)
-            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+            for model_id in ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-1.5-flash"]:
                 try:
                     resp = client.models.generate_content(model=model_id, contents=[prompt, image_part])
                     if resp and resp.text:
