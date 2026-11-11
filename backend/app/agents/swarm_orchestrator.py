@@ -7,6 +7,7 @@ from backend.app.agents.sentry import sentry_agent, SentryInspectionResult, Mult
 from backend.app.agents.gatekeeper import gatekeeper_vault, EnclaveAuthorizationReceipt
 from backend.app.agents.optimizer import api_cost_optimizer, RoutingDirective
 from backend.app.agents.circuit_breaker import circuit_breaker, RollbackReceipt
+from backend.app.agents.fulfillment_tracker import fulfillment_tracker, ShipmentTracking
 from backend.app.mock_stores.dynamic_market import dynamic_market, MarketStore
 from backend.app.security.audit_ledger import audit_ledger
 from backend.app.integrations.zapier import zapier_dispatcher
@@ -26,6 +27,7 @@ class SwarmExecutionResult(BaseModel):
     engine4_routing_result: Optional[RoutingDirective] = None
     agent3_vault_receipt: Optional[EnclaveAuthorizationReceipt] = None
     agent5_circuit_breaker: Optional[RollbackReceipt] = None
+    agent6_fulfillment: Optional[ShipmentTracking] = None
     
     final_status: str
     financial_outcome: str
@@ -320,6 +322,15 @@ class PayGuardSwarmOrchestrator:
                 item_description=certified_draft.item_name
             )
 
+            # Agent 6: Post-purchase fulfillment and courier dispatch
+            shipment_d = fulfillment_tracker.create_shipment(
+                order_id=recovered_vault_receipt.paypal_order_id or "ORDER_PAYPAL_8PY",
+                paypal_capture_id=recovered_vault_receipt.paypal_capture_id or "CAP_SECURE_99",
+                item_name=certified_draft.item_name,
+                merchant_name=safe_store.store_name,
+                delivery_sla_str=getattr(safe_store, "delivery_str", "1 Day (Next-Day Guaranteed)")
+            )
+
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
             journey_steps = [
                 {
@@ -351,6 +362,11 @@ class PayGuardSwarmOrchestrator:
                     "num": "STEP 6", "icon": "🟢", "title": "Safe Delivery & Final PayPal Settlement", 
                     "badge": "🟢 SETTLED SECURELY", "badge_color": "#10B981", "border": "#10B981",
                     "text": f"Vault Enclave issued bounded EST token (₹{safe_price:.2f} ceiling) and captured order via PayPal (Capture ID: {recovered_vault_receipt.paypal_capture_id}). Mission safely completed!"
+                },
+                {
+                    "num": "STEP 7", "icon": "📦", "title": "Autonomous Courier & Delivery Tracking", 
+                    "badge": f"🚚 {shipment_d.carrier_badge}", "badge_color": "#38BDF8", "border": "#38BDF8",
+                    "text": f"Agent 6 generated {shipment_d.carrier_name} waybill ({shipment_d.tracking_number}). Cryptographic seal #{shipment_d.security_seal_hash} active. Status: In Transit (ETA: {shipment_d.estimated_delivery})."
                 }
             ]
             return SwarmExecutionResult(
@@ -365,6 +381,7 @@ class PayGuardSwarmOrchestrator:
                 engine4_routing_result=routing,
                 agent3_vault_receipt=recovered_vault_receipt,
                 agent5_circuit_breaker=cb_receipt,
+                agent6_fulfillment=shipment_d,
                 final_status="CIRCUIT_BREAKER_TRIGGERED",
                 financial_outcome=(
                     f"CIRCUIT BREAKER VOID & SELF-HEALING SETTLEMENT: Merchant {store_d.store_name} surged to "
@@ -419,6 +436,17 @@ class PayGuardSwarmOrchestrator:
                 )
             outcome_msg = f"SUCCESS: Order captured safely for ₹{safe_price:.2f} via PayPal (Capture ID: {vault_receipt.paypal_capture_id}) under strict EST bounds."
 
+        # Agent 6: Post-purchase fulfillment and courier dispatch
+        shipment = None
+        if vault_receipt.authorized:
+            shipment = fulfillment_tracker.create_shipment(
+                order_id=vault_receipt.paypal_order_id or "ORDER_PAYPAL_8PY",
+                paypal_capture_id=vault_receipt.paypal_capture_id or "CAP_SECURE_99",
+                item_name=certified_draft.item_name,
+                merchant_name=safe_store.store_name,
+                delivery_sla_str=getattr(safe_store, "delivery_str", "1 Day (Next-Day Guaranteed)")
+            )
+
         journey_steps = [
             {
                 "num": "STEP 1", "icon": "🛒", "title": "Multi-Store Discovery & Price Ranking", 
@@ -447,6 +475,13 @@ class PayGuardSwarmOrchestrator:
             }
         ]
 
+        if shipment:
+            journey_steps.append({
+                "num": "STEP 6", "icon": "📦", "title": "Autonomous Courier & Delivery Tracking",
+                "badge": f"🚚 {shipment.carrier_badge}", "badge_color": "#38BDF8", "border": "#38BDF8",
+                "text": f"Agent 6 generated {shipment.carrier_name} waybill ({shipment.tracking_number}). Package cryptographically sealed (Seal #{shipment.security_seal_hash}). In Transit to {shipment.destination_city} (ETA: {shipment.estimated_delivery})."
+            })
+
         return SwarmExecutionResult(
             success=vault_receipt.authorized,
             scenario_mode="PROTECTED_PAYGUARD",
@@ -459,6 +494,7 @@ class PayGuardSwarmOrchestrator:
             engine4_routing_result=routing,
             agent3_vault_receipt=vault_receipt,
             agent5_circuit_breaker=cb_receipt,
+            agent6_fulfillment=shipment,
             final_status="ORDER_SETTLED_SECURELY",
             financial_outcome=outcome_msg,
             failover_recovery_note=multi_audit.failover_reasoning,

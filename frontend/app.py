@@ -34,6 +34,8 @@ import backend.app.agents.gatekeeper as gatekeeper_mod
 importlib.reload(gatekeeper_mod)
 import backend.app.agents.circuit_breaker as cb_mod
 importlib.reload(cb_mod)
+import backend.app.agents.fulfillment_tracker as ft_mod
+importlib.reload(ft_mod)
 import backend.app.agents.optimizer as opt_mod
 importlib.reload(opt_mod)
 import backend.app.mock_stores.dynamic_market as market_mod
@@ -1314,6 +1316,68 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
                 "intercept_latency": f"{res.agent5_circuit_breaker.latency_ms} ms",
                 "message": res.agent5_circuit_breaker.message
             }, indent=2), language="json")
+
+    # Agent 6: Autonomous Courier & Delivery Tracking (Post-Purchase Logistics Guardian)
+    if hasattr(res, "agent6_fulfillment") and res.agent6_fulfillment:
+        ship = res.agent6_fulfillment
+        st.markdown("---")
+        st.subheader("📦 Agent 6: Autonomous Courier & Real-Time Delivery Tracking")
+        st.caption(f"Zero-Trust fulfillment watchdog actively monitoring waybill `{ship.tracking_number}` via {ship.carrier_name}.")
+
+        # Render Header Card with Carrier Badge, ETA, and Tamper-evident Seal
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <span style="background: rgba(56, 189, 248, 0.18); color: #38BDF8; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; border: 1px solid rgba(56, 189, 248, 0.4);">{ship.carrier_badge}</span>
+                    <span style="font-size: 1.15rem; font-weight: 800; color: #F8FAFC; margin-left: 10px;">Waybill: <code style="color: #38BDF8; background: #0F172A; padding: 2px 6px; border-radius: 4px;">{ship.tracking_number}</code></span>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.8rem; color: #94A3B8;">Guaranteed Delivery ETA:</div>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #34D399;">🕒 {ship.estimated_delivery}</div>
+                </div>
+            </div>
+            
+            <div style="margin: 14px 0 10px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #94A3B8; margin-bottom: 6px;">
+                    <span>Transit Progress ({ship.current_status.replace('_', ' ')})</span>
+                    <strong style="color: #38BDF8;">{ship.progress_pct}% Completed</strong>
+                </div>
+                <div style="width: 100%; background: #0F172A; border-radius: 10px; height: 10px; overflow: hidden; border: 1px solid #334155;">
+                    <div style="width: {ship.progress_pct}%; background: linear-gradient(90deg, #38BDF8, #10B981); height: 100%; border-radius: 10px;"></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px; font-size: 0.84rem; background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px; border: 1px solid #1E293B;">
+                <div>📍 <strong>Origin Hub:</strong> <span style="color: #CBD5E1;">{ship.origin_hub}</span></div>
+                <div>🎯 <strong>Destination:</strong> <span style="color: #CBD5E1;">{ship.destination_city}</span></div>
+                <div>🛡️ <strong>Tamper-Proof Seal:</strong> <code style="color: #A78BFA;">#{ship.security_seal_hash}</code></div>
+                <div>🔑 <strong>Delivery OTP:</strong> <strong style="color: #F59E0B; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px;">{ship.otp_code}</strong></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Milestone Timeline
+        st.markdown("##### 📍 Live Shipment Checkpoint Milestones")
+        t_cols = st.columns(len(ship.milestones))
+        for idx, m in enumerate(ship.milestones):
+            with t_cols[idx]:
+                status_color = "#10B981" if m.status == "COMPLETED" else ("#38BDF8" if m.status == "IN_PROGRESS" else "#64748B")
+                badge_bg = "rgba(16, 185, 129, 0.15)" if m.status == "COMPLETED" else ("rgba(56, 189, 248, 0.15)" if m.status == "IN_PROGRESS" else "rgba(100, 116, 139, 0.1)")
+                st.markdown(f"""
+                <div style="background: #0F172A; border-top: 3px solid {status_color}; border-radius: 8px; padding: 12px; border-left: 1px solid #1E293B; border-right: 1px solid #1E293B; border-bottom: 1px solid #1E293B; min-height: 180px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 1.1rem;">{m.icon}</span>
+                        <span style="font-size: 0.68rem; font-weight: 700; color: {status_color}; background: {badge_bg}; padding: 2px 6px; border-radius: 4px;">{m.status}</span>
+                    </div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #F8FAFC; margin-bottom: 4px;">{m.title}</div>
+                    <div style="font-size: 0.74rem; color: #94A3B8; margin-bottom: 6px;">⏱️ {m.timestamp} | {m.location}</div>
+                    <div style="font-size: 0.77rem; color: #CBD5E1; line-height: 1.3;">{m.description}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # SLA Guarantee Protection Note
+        st.info("🛡️ **PayGuard Non-Custodial Delivery Guarantee:** Agent 6 monitors live courier telemetry. If transit time exceeds promised SLA window, Agent 6 autonomously invokes PayPal Dispute & Refund APIs to claim compensation for the customer.")
 
     # Downloadable Proof-of-Safety Certificate as PDF & JSON
     if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
