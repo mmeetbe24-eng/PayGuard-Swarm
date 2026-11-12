@@ -148,16 +148,16 @@ class MultimodalVisionInspector:
                     confidence_notes=f"Visual cylindrical aspect ratio ({aspect:.2f}) matching drinkware & thermal bottles."
                 )
 
-            # 2. Wrist watch signature: balanced aspect ratio with metallic steel dial & bracelet:
-            if 0.85 <= aspect <= 1.35 and (metallic_ratio > 0.18 or (dark_ratio > 0.15 and metallic_ratio > 0.08)):
+            # 2. Large upright two-tone appliance / Refrigerator / Cooler (metallic silver doors & dark side body):
+            if 1.10 <= aspect <= 1.70 and metallic_ratio > 0.22 and dark_ratio > 0.10:
                 return VisionProductResult(
                     is_valid_product=True,
-                    product_title="Classic Stainless Steel Men's Wrist Watch",
-                    category="Watches & Jewelry",
-                    color_or_style="Brushed Stainless Steel Link Bracelet with Precision Dial",
-                    estimated_price_usd=4999.0,
-                    search_directive="Find and buy Wrist Watch under ₹5000 using PayPal",
-                    confidence_notes=f"Visual chromatic match ({metallic_ratio*100:.1f}% metallic steel profile) matching precision wristwatch."
+                    product_title="Double-Door Frost-Free Refrigerator (260L)",
+                    category="Large Appliances",
+                    color_or_style="Brushed Stainless Steel with Inverter Compressor",
+                    estimated_price_usd=26990.0,
+                    search_directive="Find and buy Double Door Refrigerator under ₹27000 using PayPal",
+                    confidence_notes=f"Visual chromatic match ({metallic_ratio*100:.1f}% metallic steel profile, aspect {aspect:.2f}) matching upright refrigerator appliance."
                 )
 
             # 3. Wide rectangular dark/metallic clamshell (Laptop, MacBook, Ultrabook, Tablet):
@@ -170,6 +170,18 @@ class MultimodalVisionInspector:
                     estimated_price_usd=89990.0,
                     search_directive="Find and buy Apple MacBook Laptop under ₹90000 using PayPal",
                     confidence_notes=f"Visual chromatic match ({dark_ratio*100:.1f}% dark tech profile, aspect {aspect:.2f}) matching laptop."
+                )
+
+            # 4. Wrist watch signature: compact centered dial with metallic steel bracelet:
+            if 0.90 <= aspect <= 1.15 and metallic_ratio > 0.20:
+                return VisionProductResult(
+                    is_valid_product=True,
+                    product_title="Classic Stainless Steel Men's Wrist Watch",
+                    category="Watches & Jewelry",
+                    color_or_style="Brushed Stainless Steel Link Bracelet with Precision Dial",
+                    estimated_price_usd=4999.0,
+                    search_directive="Find and buy Wrist Watch under ₹5000 using PayPal",
+                    confidence_notes=f"Visual chromatic match ({metallic_ratio*100:.1f}% metallic steel profile) matching precision wristwatch."
                 )
 
             if yellow_red_ratio > 0.08:
