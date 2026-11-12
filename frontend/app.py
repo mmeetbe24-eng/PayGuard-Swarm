@@ -434,7 +434,9 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
     # 1. Zero-Latency Memory Cache Check (Instant 0ms for repeated / old uploads)
     if img_hash in st.session_state["vision_cache"]:
         cached = st.session_state["vision_cache"][img_hash]
-        return cached[0], cached[1], cached[2], cached[3]
+        # Never serve stale generic fallback results from cache
+        if cached[0] != "Curated Quality Retail Product":
+            return cached[0], cached[1], cached[2], cached[3]
 
     fn = filename.lower() if filename else ""
 
@@ -506,8 +508,7 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
                 }],
                 "generationConfig": {
                     "temperature": 0.1,
-                    "maxOutputTokens": 90,
-                    "responseMimeType": "application/json"
+                    "maxOutputTokens": 100
                 }
             }
 
@@ -644,8 +645,9 @@ with col_left:
         if uploaded_image is not None:
             img_cache_key = f"{uploaded_image.name}_{uploaded_image.size}"
             
-            # Auto-analyze image on new upload and immediately apply to search directive
-            if st.session_state.get("active_img_cache_key") != img_cache_key:
+            # Auto-analyze image on new upload or if previously stuck on stale generic fallback
+            force_reanalyze = (st.session_state.get("vis_detected_name") in ("Curated Quality Retail Product", "Identified Product"))
+            if st.session_state.get("active_img_cache_key") != img_cache_key or force_reanalyze:
                 img_bytes = uploaded_image.getvalue()
                 with st.spinner("🔍 AI Multimodal Vision analyzing product image..."):
                     d_name, s_budget, d_cat, eng = classify_visual_product(
@@ -704,13 +706,22 @@ with col_left:
                 with col_v2:
                     st.write("")
                     st.write("")
-                    if st.button("Update Budget (₹)", key=f"btn_upd_b_{st.session_state['form_epoch']}", type="primary", use_container_width=True):
-                        st.session_state["active_budget"] = float(custom_v_budget)
-                        st.session_state["custom_directive"] = f"Find and buy {d_name} under ₹{custom_v_budget:.0f} using PayPal"
-                        st.session_state["form_epoch"] += 1
-                        st.session_state["market_snapshot"] = {}
-                        st.session_state["has_executed"] = False
-                        st.rerun()
+                    sub_btn_c1, sub_btn_c2 = st.columns(2)
+                    with sub_btn_c1:
+                        if st.button("Update (₹)", key=f"btn_upd_b_{st.session_state['form_epoch']}", type="primary", use_container_width=True):
+                            st.session_state["active_budget"] = float(custom_v_budget)
+                            st.session_state["custom_directive"] = f"Find and buy {d_name} under ₹{custom_v_budget:.0f} using PayPal"
+                            st.session_state["form_epoch"] += 1
+                            st.session_state["market_snapshot"] = {}
+                            st.session_state["has_executed"] = False
+                            st.rerun()
+                    with sub_btn_c2:
+                        if st.button("🔄 Re-Scan", key=f"btn_rescan_{st.session_state['form_epoch']}", use_container_width=True):
+                            if "vision_cache" in st.session_state:
+                                st.session_state["vision_cache"].clear()
+                            st.session_state["active_img_cache_key"] = ""
+                            st.session_state["vis_detected_name"] = ""
+                            st.rerun()
 
         # Quick Product Presets for 1-Click Catalog Testing in Rupees (₹)
         st.caption("⚡ Or choose an instant live catalog preset in Rupees (₹):")
