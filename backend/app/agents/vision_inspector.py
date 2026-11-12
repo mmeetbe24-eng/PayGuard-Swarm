@@ -160,6 +160,18 @@ class MultimodalVisionInspector:
                     confidence_notes=f"Visual chromatic match ({metallic_ratio*100:.1f}% metallic steel profile) matching precision wristwatch."
                 )
 
+            # 3. Wide rectangular dark/metallic clamshell (Laptop, MacBook, Ultrabook, Tablet):
+            if aspect <= 0.88 and (dark_ratio > 0.16 or metallic_ratio > 0.18):
+                return VisionProductResult(
+                    is_valid_product=True,
+                    product_title="Apple MacBook Pro / Ultra-Slim Laptop",
+                    category="Computers & Tech",
+                    color_or_style="Space Gray Aluminum Chassis",
+                    estimated_price_usd=89990.0,
+                    search_directive="Find and buy Apple MacBook Laptop under ₹90000 using PayPal",
+                    confidence_notes=f"Visual chromatic match ({dark_ratio*100:.1f}% dark tech profile, aspect {aspect:.2f}) matching laptop."
+                )
+
             if yellow_red_ratio > 0.08:
                 return VisionProductResult(
                     is_valid_product=True,

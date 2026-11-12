@@ -512,45 +512,53 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
             }
 
             key_str = str(api_key).strip()
-            # Fast priority: Try Gemini 2.0 Flash first, fallback to 1.5 Flash if 404
-            models_to_test = ["gemini-2.0-flash", "gemini-1.5-flash"]
+            # Fast model priority: Gemini 2.0 Flash first, followed by stable Google Cloud versioned aliases
+            models_to_test = ["gemini-2.0-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-latest", "gemini-1.5-flash"]
             cached_m = st.session_state.get("fast_gemini_model")
             if cached_m and cached_m in models_to_test:
                 models_to_test = [cached_m] + [m for m in models_to_test if m != cached_m]
 
+            # Universal auth headers: passes both Bearer (for OAuth/AQ. keys) and x-goog-api-key (for AIzaSy keys)
+            universal_headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": key_str,
+                "Authorization": f"Bearer {key_str}"
+            }
+
             for model_id in models_to_test:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={key_str}"
-                headers = {"Content-Type": "application/json"}
-                try:
-                    resp = requests.post(url, json=rest_payload, headers=headers, timeout=2.5)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            content_parts = candidates[0].get("content", {}).get("parts", [])
-                            if content_parts and "text" in content_parts[0]:
-                                raw_txt = content_parts[0]["text"]
-                                m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
-                                if m:
-                                    d = json.loads(m.group(0))
-                                    title = str(d.get("product_title", "")).strip().replace('\\', '')
-                                    b = float(d.get("suggested_budget_inr", 1000.0))
-                                    cat = str(d.get("category", "General Retail")).strip()
-                                    if title and len(title) > 2:
-                                        res_tuple = (title, max(10.0, b), cat, "gemini")
-                                        st.session_state["vision_cache"][img_hash] = res_tuple
-                                        st.session_state["gemini_last_error"] = ""
-                                        st.session_state["fast_gemini_model"] = model_id
-                                        return res_tuple
-                    elif resp.status_code in (400, 401, 403):
-                        # Key is invalid or forbidden; stop immediately and use instant local CV fallback
-                        st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: Invalid or unauthorized API key"
-                        break
-                    else:
-                        st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:100]}"
-                except Exception as net_err:
-                    st.session_state["gemini_last_error"] = str(net_err)[:100]
-                    break  # Do not hang in retries if connection timed out
+                endpoints_to_try = [
+                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", universal_headers),
+                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={key_str}", {"Content-Type": "application/json"})
+                ]
+                model_succeeded = False
+                for url, hdrs in endpoints_to_try:
+                    try:
+                        resp = requests.post(url, json=rest_payload, headers=hdrs, timeout=3.0)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                content_parts = candidates[0].get("content", {}).get("parts", [])
+                                if content_parts and "text" in content_parts[0]:
+                                    raw_txt = content_parts[0]["text"]
+                                    m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
+                                    if m:
+                                        d = json.loads(m.group(0))
+                                        title = str(d.get("product_title", "")).strip().replace('\\', '')
+                                        b = float(d.get("suggested_budget_inr", 1000.0))
+                                        cat = str(d.get("category", "General Retail")).strip()
+                                        if title and len(title) > 2:
+                                            res_tuple = (title, max(10.0, b), cat, "gemini")
+                                            st.session_state["vision_cache"][img_hash] = res_tuple
+                                            st.session_state["gemini_last_error"] = ""
+                                            st.session_state["fast_gemini_model"] = model_id
+                                            return res_tuple
+                        else:
+                            st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:100]}"
+                    except Exception as net_err:
+                        st.session_state["gemini_last_error"] = str(net_err)[:100]
+                if st.session_state.get("fast_gemini_model"):
+                    break
         except Exception as e:
             st.session_state["gemini_last_error"] = str(e)[:100]
 
