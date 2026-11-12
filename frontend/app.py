@@ -422,23 +422,24 @@ if "vision_cache" not in st.session_state:
 # Helper function for live multimodal visual classification in INR (₹)
 def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget: float = 50.0):
     """
-    High-Speed Multimodal Vision Classifier:
-    1. Instant 0ms Cache: Computes SHA-256 image fingerprint and returns immediately if scanned before.
-    2. Lightning Thumbnailing: Pre-compresses to 320px / 12KB for sub-second network upload.
-    3. Fast-Inference Gemini 2.0 Flash with JSON Mode & strict 3s timeout (no multi-minute hangs).
-    4. Instant Fallback: If cloud API lags or key is invalid, falls back in <5ms to chromatic CV.
+    100% Pure Online Multimodal Vision Classifier (Google Gemini Cloud Vision):
+    1. Instant 0ms Memory Cache: Uses SHA-256 image fingerprint.
+    2. Lightning Pre-compression: Downscales to 320px (~12KB) for sub-second cloud inference.
+    3. Live Cloud Vision: Queries modern Gemini models (gemini-3.5-flash, gemini-flash-latest, etc.).
+    4. Zero Guesswork Policy: All chromatic and heuristic guessing removed. If cloud API is
+       unreachable, returns clean unclassified reference rather than guessing random items.
     """
     import hashlib
     img_hash = hashlib.sha256(img_bytes).hexdigest()[:24]
 
-    # 1. Zero-Latency Memory Cache Check (Instant 0ms for repeated / old uploads)
+    # 1. Zero-Latency Memory Cache Check
     if "vision_cache" in st.session_state and img_hash in st.session_state["vision_cache"]:
         cached = st.session_state["vision_cache"][img_hash]
         return cached[0], cached[1], cached[2], cached[3]
 
     fn = filename.lower() if filename else ""
 
-    # Detect accurate MIME type from image bytes or filename
+    # Detect accurate MIME type
     mime_type = "image/jpeg"
     if img_bytes[:8] == b'\x89PNG\r\n\x1a\n' or fn.endswith(".png"):
         mime_type = "image/png"
@@ -447,23 +448,25 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
     elif img_bytes[:3] == b'GIF':
         mime_type = "image/gif"
 
-    # Resolve Gemini API Key across all possible Streamlit / OS environments
-    api_key = (
-        st.session_state.get("runtime_gemini_key")
-        or st.session_state.get("side_gemini_key_input")
-        or os.environ.get("GEMINI_API_KEY")
-        or settings.GEMINI_API_KEY
-    )
-    if not api_key:
-        try:
-            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
-                api_key = str(st.secrets["GEMINI_API_KEY"])
-        except Exception:
-            pass
+    # Resolve Gemini API Key across environments (st.secrets FIRST)
+    api_key = None
+    try:
+        if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+            api_key = str(st.secrets["GEMINI_API_KEY"]).strip()
+    except Exception:
+        pass
 
-    # 2. Live Cloud Multimodal Vision (Optimized for Sub-Second Latency)
+    if not api_key:
+        api_key = (
+            st.session_state.get("runtime_gemini_key")
+            or st.session_state.get("side_gemini_key_input")
+            or os.environ.get("GEMINI_API_KEY")
+            or settings.GEMINI_API_KEY
+        )
+
+    # 2. Live Cloud Multimodal Vision (Google Gemini Online Search)
     if api_key:
-        # Pre-compress image to compact 320px thumbnail (Reduces 5MB uploads to ~12KB)
+        # Pre-compress image to compact 320px thumbnail for rapid network upload
         opt_bytes = img_bytes
         opt_mime = mime_type
         try:
@@ -479,26 +482,27 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
         except Exception:
             pass
 
-        # High-Speed Gemini Multimodal Vision (Official GenAI SDK + Direct REST fallback)
+        prompt_text = """
+        Identify the exact product shown in this photo with high accuracy.
+        Return strictly a single JSON object with no additional markdown:
+        {
+          "product_title": "<Specific product name, e.g. 'Double-Door Refrigerator', 'Smart LED Television', 'Apple MacBook Pro', 'Titan Men\\'s Watch', 'Lay\\'s Classic Potato Chips'>",
+          "category": "<e.g. Large Appliances, Consumer Electronics, Computers & Tech, Watches & Jewelry, Food & Grocery, Footwear, Fashion & Apparel>",
+          "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 26000 for fridge, 18000 for TV, 89990 for laptop, 4999 for watch, 50 for chips>
+        }
+        """
+
+        # A. Official Google GenAI SDK
         try:
             from google import genai
             from google.genai import types
             import re, json
 
-            client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
-            sdk_prompt = """
-            Identify the product in this photo with high precision.
-            Return strictly a JSON object:
-            {
-              "product_title": "<Specific product name, e.g. 'Apple MacBook Pro Laptop', 'Titan Quartz Wrist Watch', 'Pilot Rollerball Pen', 'Lay\\'s Classic Potato Chips'>",
-              "category": "<e.g. Computers & Tech, Watches & Jewelry, Office Supplies, Food & Grocery>",
-              "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 89990 for laptop, 4500 for watch, 120 for pen, 50 for chips>
-            }
-            """
+            client = genai.Client(api_key=api_key)
             image_part = types.Part.from_bytes(data=opt_bytes, mime_type=opt_mime)
-            for m_id in ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-001", "gemini-1.5-flash"]:
+            for m_id in ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite", "gemini-3.8-flash"]:
                 try:
-                    resp = client.models.generate_content(model=m_id, contents=[sdk_prompt, image_part])
+                    resp = client.models.generate_content(model=m_id, contents=[prompt_text, image_part])
                     if resp and resp.text:
                         m = re.search(r'\{.*\}', resp.text, re.DOTALL)
                         if m:
@@ -513,97 +517,60 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
                                 st.session_state["fast_gemini_model"] = m_id
                                 return res_tuple
                 except Exception as ex:
-                    st.session_state["gemini_last_error"] = str(ex)[:120]
+                    st.session_state["gemini_last_error"] = str(ex)[:140]
                     continue
         except Exception as e:
-            st.session_state["gemini_last_error"] = str(e)[:120]
+            st.session_state["gemini_last_error"] = str(e)[:140]
 
-        # Secondary Fast REST Invocations
+        # B. Direct HTTP REST Invocations (failsafe)
         try:
             import base64, requests, re, json
             b64_img = base64.b64encode(opt_bytes).decode("utf-8")
             rest_payload = {
                 "contents": [{
                     "parts": [
-                        {"text": "Identify product strictly in JSON: {\"product_title\": \"...\", \"category\": \"...\", \"suggested_budget_inr\": 1000}"},
+                        {"text": prompt_text},
                         {"inlineData": {"mimeType": opt_mime, "data": b64_img}}
                     ]
                 }]
             }
             key_str = str(api_key).strip()
-            universal_headers = {"Content-Type": "application/json", "x-goog-api-key": key_str, "Authorization": f"Bearer {key_str}"}
-            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash-001"]:
-                endpoints = [
-                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", universal_headers),
-                    (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={key_str}", {"Content-Type": "application/json"})
-                ]
-                for url, hdrs in endpoints:
-                    try:
-                        resp = requests.post(url, json=rest_payload, headers=hdrs, timeout=3.0)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            candidates = data.get("candidates", [])
-                            if candidates:
-                                content_parts = candidates[0].get("content", {}).get("parts", [])
-                                if content_parts and "text" in content_parts[0]:
-                                    raw_txt = content_parts[0]["text"]
-                                    m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
-                                    if m:
-                                        d = json.loads(m.group(0))
-                                        title = str(d.get("product_title", "")).strip().replace('\\', '')
-                                        b = float(d.get("suggested_budget_inr", 1000.0))
-                                        cat = str(d.get("category", "General Retail")).strip()
-                                        if title and len(title) > 2:
-                                            res_tuple = (title, max(10.0, b), cat, "gemini")
-                                            st.session_state["vision_cache"][img_hash] = res_tuple
-                                            st.session_state["gemini_last_error"] = ""
-                                            return res_tuple
-                    except Exception:
-                        pass
+            headers = {"Content-Type": "application/json"}
+            for model_id in ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"]:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={key_str}"
+                try:
+                    resp = requests.post(url, json=rest_payload, headers=headers, timeout=8.0)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            content_parts = candidates[0].get("content", {}).get("parts", [])
+                            if content_parts and "text" in content_parts[0]:
+                                raw_txt = content_parts[0]["text"]
+                                m = re.search(r'\{.*\}', raw_txt, re.DOTALL)
+                                if m:
+                                    d = json.loads(m.group(0))
+                                    title = str(d.get("product_title", "")).strip().replace('\\', '')
+                                    b = float(d.get("suggested_budget_inr", 1000.0))
+                                    cat = str(d.get("category", "General Retail")).strip()
+                                    if title and len(title) > 2:
+                                        res_tuple = (title, max(10.0, b), cat, "gemini")
+                                        st.session_state["vision_cache"][img_hash] = res_tuple
+                                        st.session_state["gemini_last_error"] = ""
+                                        st.session_state["fast_gemini_model"] = model_id
+                                        return res_tuple
+                    else:
+                        st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:120]}"
+                except Exception as rest_ex:
+                    st.session_state["gemini_last_error"] = str(rest_ex)[:140]
         except Exception as e:
-            pass
+            st.session_state["gemini_last_error"] = str(e)[:140]
+    else:
+        st.session_state["gemini_last_error"] = "No GEMINI_API_KEY detected in secrets or environment."
 
-    # 3. Intelligent Computer Vision Chromatic & Heuristic Fallback (< 5ms response)
-    try:
-        from backend.app.agents.vision_inspector import vision_inspector
-        v_res = vision_inspector._heuristic_visual_analysis(img_bytes, filename)
-        if v_res and v_res.product_title:
-            res_tuple = (v_res.product_title, v_res.estimated_price_usd, v_res.category, "heuristic")
-            st.session_state["vision_cache"][img_hash] = res_tuple
-            return res_tuple
-    except Exception:
-        pass
-
-    # 4. Universal Keyword Recognition from filename (< 1ms response)
-    res_kw = None
-    if any(k in fn for k in ["pen", "ballpoint", "pilot", "ink", "stationery", "pencil", "marker"]):
-        res_kw = ("Executive Pilot Rollerball Pen", 150.0, "Office & Stationery", "keyword")
-    elif any(k in fn for k in ["watch", "wrist", "rolex", "omega", "titan", "casio", "chronograph", "smartwatch", "dial"]):
-        res_kw = ("Classic Analog Wrist Watch", 4999.0, "Watches & Accessories", "keyword")
-    elif any(k in fn for k in ["phone", "mobile", "android", "samsung", "oneplus", "pixel", "smartphone", "iphone"]):
-        res_kw = ("5G Smartphone (256GB)", 39999.0, "Mobiles & Tech", "keyword")
-    elif any(k in fn for k in ["bottle", "flask", "tumbler", "thermos"]):
-        res_kw = ("Stainless Steel Insulated Water Bottle", 799.0, "Home & Kitchen", "keyword")
-    elif any(k in fn for k in ["mug", "cup", "coffee"]):
-        res_kw = ("Ceramic Coffee Mug (350ml)", 399.0, "Kitchen & Dining", "keyword")
-    elif any(k in fn for k in ["laptop", "macbook", "dell", "hp", "notebook", "computer"]):
-        res_kw = ("Ultra-Slim 15-inch Laptop", 54990.0, "Computers & Tech", "keyword")
-    elif any(k in fn for k in ["headphone", "sony", "audio", "earphone", "airpod", "bose"]):
-        res_kw = ("Active Noise Cancelling Wireless Headphones", 24990.0, "Consumer Electronics", "keyword")
-    elif any(k in fn for k in ["shoe", "sneaker", "nike", "jordan", "runner"]):
-        res_kw = ("Athletic Running Sneakers", 6999.0, "Footwear & Athletic", "keyword")
-    elif any(k in fn for k in ["top", "dress", "shirt", "blouse", "crop", "apparel", "knit"]):
-        res_kw = ("Women's Fitted Contemporary Top", 799.0, "Fashion & Apparel", "keyword")
-    elif any(k in fn for k in ["lay", "chip", "potato", "snack", "wafer", "kurkure", "dorito"]):
-        res_kw = ("Lay's Classic Salted Potato Chips", 50.0, "Pantry & Snacks", "keyword")
-
-    if res_kw:
-        st.session_state["vision_cache"][img_hash] = res_kw
-        return res_kw
-
-    # 5. Clean Generic Reference
-    curr_b = float(active_budget) if active_budget and active_budget > 0 else 999.0
-    res_def = ("Verified Retail Reference Item", curr_b, "E-Commerce Catalog", "fallback")
+    # 3. Clean Zero-Guess Policy (No chromatic heuristics, no hardcoded guesses)
+    curr_b = float(active_budget) if active_budget and active_budget > 0 else 50.0
+    res_def = ("Uploaded Product Reference", curr_b, "Unclassified", "cloud_error")
     st.session_state["vision_cache"][img_hash] = res_def
     return res_def
 
@@ -659,38 +626,51 @@ with col_left:
                 st.session_state["vis_suggested_budget"] = float(s_budget)
                 st.session_state["vis_detected_cat"] = d_cat
                 st.session_state["vis_engine"] = eng
-                st.session_state["custom_directive"] = f"Find and buy {d_name} under ₹{s_budget:.0f} using PayPal"
-                st.session_state["active_budget"] = float(s_budget)
+                if eng == "gemini":
+                    st.session_state["custom_directive"] = f"Find and buy {d_name} under ₹{s_budget:.0f} using PayPal"
+                    st.session_state["active_budget"] = float(s_budget)
                 st.session_state["form_epoch"] += 1
                 st.session_state["market_snapshot"] = {}
                 st.session_state["has_executed"] = False
                 st.rerun()
 
-            d_name = st.session_state.get("vis_detected_name", "Identified Product")
+            d_name = st.session_state.get("vis_detected_name", "Uploaded Product Reference")
             s_budget = st.session_state.get("vis_suggested_budget", 1000.0)
-            d_cat = st.session_state.get("vis_detected_cat", "Retail")
+            d_cat = st.session_state.get("vis_detected_cat", "Unclassified")
             eng = st.session_state.get("vis_engine", "gemini")
 
             img_c1, img_c2 = st.columns([1, 2])
             with img_c1:
                 st.image(uploaded_image, width=140, caption="Uploaded Image")
             with img_c2:
-                ai_mode_badge = "🌐 Gemini 2.0 Live Cloud Vision" if eng == "gemini" else "⚡ Computer Vision Chromatics"
+                if eng == "gemini":
+                    ai_mode_badge = "🌐 Gemini Cloud Vision (Live Multimodal)"
+                    card_border = "rgba(16, 185, 129, 0.35)"
+                    card_bg = "rgba(16, 185, 129, 0.12)"
+                    status_text = f"✅ Auto-Detected: {d_name}"
+                    sub_text = "🎯 Automatically applied to your shopping directive! Adjust your budget ceiling below if desired:"
+                else:
+                    ai_mode_badge = "⚠️ Cloud Vision Offline"
+                    card_border = "rgba(245, 158, 11, 0.35)"
+                    card_bg = "rgba(245, 158, 11, 0.12)"
+                    status_text = f"📷 Image Reference: {d_name}"
+                    sub_text = "🔒 Zero-Guess Policy active: Chromatic guessing removed. Specify your target product directive manually below."
+
                 st.markdown(f"""
-                <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 12px 14px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="background: {card_bg}; border: 1px solid {card_border}; padding: 12px 14px; border-radius: 8px; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 700; color: #34D399; font-size: 0.98rem;">✅ Auto-Detected: {d_name}</span>
+                        <span style="font-weight: 700; color: #38BDF8; font-size: 0.98rem;">{status_text}</span>
                         <span style="font-size: 0.72rem; background: rgba(56, 189, 248, 0.2); color: #38BDF8; padding: 2px 8px; border-radius: 12px;">{ai_mode_badge}</span>
                     </div>
-                    <div style="font-size: 0.84rem; color: #CBD5E1; margin-top: 4px;">📦 Category: <strong>{d_cat}</strong> | 🏷️ Suggested Market Ceiling: <strong style="color: #38BDF8;">₹{s_budget:.0f}</strong></div>
-                    <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">🎯 Automatically applied to your shopping directive! Adjust your budget ceiling below if desired:</div>
+                    <div style="font-size: 0.84rem; color: #CBD5E1; margin-top: 4px;">📦 Category: <strong>{d_cat}</strong> | 🏷️ Market Ceiling: <strong style="color: #38BDF8;">₹{s_budget:.0f}</strong></div>
+                    <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">{sub_text}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
                 if eng != "gemini" and st.session_state.get("gemini_last_error"):
-                    with st.expander("⚠️ Gemini API Cloud Log", expanded=False):
-                        st.caption(f"Google returned: `{st.session_state['gemini_last_error']}`")
-                        st.caption("Standard Gemini developer API keys from aistudio.google.com/apikey begin with `AIzaSy...`.")
+                    with st.expander("⚠️ Gemini Cloud Vision Telemetry", expanded=False):
+                        st.caption(f"Google API Log: `{st.session_state['gemini_last_error']}`")
+                        st.caption("Verify your GEMINI_API_KEY in the sidebar or Streamlit Cloud secrets.")
                 
                 col_v1, col_v2 = st.columns([2, 1])
                 with col_v1:
