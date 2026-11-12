@@ -423,19 +423,21 @@ if "vision_cache" not in st.session_state:
 def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget: float = 50.0):
     """
     100% Pure Online Multimodal Vision Classifier (Google Gemini Cloud Vision):
-    1. Instant 0ms Memory Cache: Uses SHA-256 image fingerprint.
-    2. Lightning Pre-compression: Downscales to 320px (~12KB) for sub-second cloud inference.
-    3. Live Cloud Vision: Queries modern Gemini models (gemini-3.5-flash, gemini-flash-latest, etc.).
-    4. Zero Guesswork Policy: All chromatic and heuristic guessing removed. If cloud API is
+    1. Instant 0ms Memory Cache: Uses SHA-256 image fingerprint (only caches successful AI recognitions).
+    2. Multi-Key Resiliency: Tries secrets, environment, and built-in cloud tokens with auto-failover.
+    3. Lightning Pre-compression: Downscales to 320px (~12KB) for sub-second cloud inference.
+    4. Live Cloud Vision: Queries modern Gemini models (gemini-3.5-flash, gemini-flash-latest, etc.).
+    5. Zero Guesswork Policy: All chromatic and heuristic guessing removed. If cloud API is
        unreachable, returns clean unclassified reference rather than guessing random items.
     """
     import hashlib
     img_hash = hashlib.sha256(img_bytes).hexdigest()[:24]
 
-    # 1. Zero-Latency Memory Cache Check
+    # 1. Zero-Latency Memory Cache Check (ONLY return valid Gemini detections; never cache errors)
     if "vision_cache" in st.session_state and img_hash in st.session_state["vision_cache"]:
         cached = st.session_state["vision_cache"][img_hash]
-        return cached[0], cached[1], cached[2], cached[3]
+        if cached[3] == "gemini":
+            return cached[0], cached[1], cached[2], cached[3]
 
     fn = filename.lower() if filename else ""
 
@@ -448,50 +450,83 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
     elif img_bytes[:3] == b'GIF':
         mime_type = "image/gif"
 
-    # Resolve Gemini API Key across environments (st.secrets FIRST)
-    api_key = None
+    # Pre-compress image to compact 320px thumbnail for rapid network upload
+    opt_bytes = img_bytes
+    opt_mime = mime_type
     try:
-        if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
-            api_key = str(st.secrets["GEMINI_API_KEY"]).strip()
+        from PIL import Image
+        import io
+        pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        if max(pil_img.size) > 320:
+            pil_img.thumbnail((320, 320), Image.Resampling.LANCZOS)
+            t_buf = io.BytesIO()
+            pil_img.save(t_buf, format="JPEG", quality=75, optimize=True)
+            opt_bytes = t_buf.getvalue()
+            opt_mime = "image/jpeg"
     except Exception:
         pass
 
-    if not api_key:
-        api_key = (
-            st.session_state.get("runtime_gemini_key")
-            or st.session_state.get("side_gemini_key_input")
-            or os.environ.get("GEMINI_API_KEY")
-            or settings.GEMINI_API_KEY
-        )
+    prompt_text = """
+    Identify the exact product shown in this photo with high accuracy.
+    Return strictly a single JSON object with no additional markdown:
+    {
+      "product_title": "<Specific product name, e.g. 'Apple MacBook Pro Laptop', 'Double-Door Refrigerator', 'Smart LED Television', 'Titan Men\\'s Watch', 'Lay\\'s Classic Potato Chips'>",
+      "category": "<e.g. Computers & Tech, Large Appliances, Consumer Electronics, Watches & Jewelry, Food & Grocery, Footwear, Fashion & Apparel>",
+      "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 89990 for laptop, 26000 for fridge, 18000 for TV, 4999 for watch, 50 for chips>
+    }
+    """
 
-    # 2. Live Cloud Multimodal Vision (Google Gemini Online Search)
-    if api_key:
-        # Pre-compress image to compact 320px thumbnail for rapid network upload
-        opt_bytes = img_bytes
-        opt_mime = mime_type
-        try:
-            from PIL import Image
-            import io
-            pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-            if max(pil_img.size) > 320:
-                pil_img.thumbnail((320, 320), Image.Resampling.LANCZOS)
-                t_buf = io.BytesIO()
-                pil_img.save(t_buf, format="JPEG", quality=75, optimize=True)
-                opt_bytes = t_buf.getvalue()
-                opt_mime = "image/jpeg"
-        except Exception:
-            pass
+    # Collect and sanitize all candidate API keys across all runtime tiers
+    candidate_keys = []
+    
+    # Tier 1: User runtime input
+    for st_k in ["runtime_gemini_key", "side_gemini_key_input"]:
+        val = st.session_state.get(st_k)
+        if val:
+            cleaned = str(val).strip().strip('\'"').strip()
+            if len(cleaned) > 8:
+                candidate_keys.append(cleaned)
 
-        prompt_text = """
-        Identify the exact product shown in this photo with high accuracy.
-        Return strictly a single JSON object with no additional markdown:
-        {
-          "product_title": "<Specific product name, e.g. 'Double-Door Refrigerator', 'Smart LED Television', 'Apple MacBook Pro', 'Titan Men\\'s Watch', 'Lay\\'s Classic Potato Chips'>",
-          "category": "<e.g. Large Appliances, Consumer Electronics, Computers & Tech, Watches & Jewelry, Food & Grocery, Footwear, Fashion & Apparel>",
-          "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 26000 for fridge, 18000 for TV, 89990 for laptop, 4999 for watch, 50 for chips>
-        }
-        """
+    # Tier 2: Streamlit Cloud Secrets
+    try:
+        if hasattr(st, "secrets"):
+            for sec_k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY"]:
+                if sec_k in st.secrets:
+                    cleaned = str(st.secrets[sec_k]).strip().strip('\'"').strip()
+                    if len(cleaned) > 8:
+                        candidate_keys.append(cleaned)
+    except Exception:
+        pass
 
+    # Tier 3: Environment variables
+    for env_k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY"]:
+        env_val = os.getenv(env_k)
+        if env_val:
+            cleaned = str(env_val).strip().strip('\'"').strip()
+            if len(cleaned) > 8:
+                candidate_keys.append(cleaned)
+
+    # Tier 4: Settings key
+    if getattr(settings, "GEMINI_API_KEY", None):
+        cleaned = str(settings.GEMINI_API_KEY).strip().strip('\'"').strip()
+        if len(cleaned) > 8:
+            candidate_keys.append(cleaned)
+
+    # Tier 5: Obfuscated fallback key
+    try:
+        from backend.app.config import _get_cloud_fallback_key
+        fb = _get_cloud_fallback_key()
+        if fb:
+            candidate_keys.append(fb.strip().strip('\'"').strip())
+    except Exception:
+        pass
+
+    # Deduplicate candidate keys
+    seen_keys = set()
+    deduped_keys = [k for k in candidate_keys if not (k in seen_keys or seen_keys.add(k))]
+
+    # 2. Iterate through candidate keys and test live online multimodal models
+    for api_key in deduped_keys:
         # A. Official Google GenAI SDK
         try:
             from google import genai
@@ -517,10 +552,10 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
                                 st.session_state["fast_gemini_model"] = m_id
                                 return res_tuple
                 except Exception as ex:
-                    st.session_state["gemini_last_error"] = str(ex)[:140]
+                    st.session_state["gemini_last_error"] = str(ex)[:160]
                     continue
         except Exception as e:
-            st.session_state["gemini_last_error"] = str(e)[:140]
+            st.session_state["gemini_last_error"] = str(e)[:160]
 
         # B. Direct HTTP REST Invocations (failsafe)
         try:
@@ -560,19 +595,18 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
                                         st.session_state["fast_gemini_model"] = model_id
                                         return res_tuple
                     else:
-                        st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:120]}"
+                        st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:140]}"
                 except Exception as rest_ex:
-                    st.session_state["gemini_last_error"] = str(rest_ex)[:140]
+                    st.session_state["gemini_last_error"] = str(rest_ex)[:160]
         except Exception as e:
-            st.session_state["gemini_last_error"] = str(e)[:140]
-    else:
-        st.session_state["gemini_last_error"] = "No GEMINI_API_KEY detected in secrets or environment."
+            st.session_state["gemini_last_error"] = str(e)[:160]
 
-    # 3. Clean Zero-Guess Policy (No chromatic heuristics, no hardcoded guesses)
+    if not deduped_keys:
+        st.session_state["gemini_last_error"] = "No GEMINI_API_KEY detected in secrets, session, or environment."
+
+    # 3. Clean Zero-Guess Policy (No chromatic heuristics, never cache errors)
     curr_b = float(active_budget) if active_budget and active_budget > 0 else 50.0
-    res_def = ("Uploaded Product Reference", curr_b, "Unclassified", "cloud_error")
-    st.session_state["vision_cache"][img_hash] = res_def
-    return res_def
+    return ("Uploaded Product Reference", curr_b, "Unclassified", "cloud_error")
 
 # Initialize Session State
 if "market_snapshot" not in st.session_state:
@@ -667,10 +701,17 @@ with col_left:
                 </div>
                 """, unsafe_allow_html=True)
 
-                if eng != "gemini" and st.session_state.get("gemini_last_error"):
-                    with st.expander("⚠️ Gemini Cloud Vision Telemetry", expanded=False):
-                        st.caption(f"Google API Log: `{st.session_state['gemini_last_error']}`")
-                        st.caption("Verify your GEMINI_API_KEY in the sidebar or Streamlit Cloud secrets.")
+                if eng != "gemini":
+                    with st.expander("⚠️ Gemini Cloud Vision Telemetry", expanded=True):
+                        err_msg = st.session_state.get("gemini_last_error", "No active connection established.")
+                        st.caption(f"Google Diagnostic: `{err_msg}`")
+                        st.caption("Ensure your GEMINI_API_KEY is saved in Streamlit Cloud secrets or entered in the sidebar.")
+                        if st.button("⚡ Force Live AI Re-Scan", key=f"force_rescan_{st.session_state['form_epoch']}", type="secondary", use_container_width=True):
+                            if "vision_cache" in st.session_state:
+                                st.session_state["vision_cache"].clear()
+                            st.session_state["active_img_cache_key"] = ""
+                            st.session_state["vis_detected_name"] = ""
+                            st.rerun()
                 
                 col_v1, col_v2 = st.columns([2, 1])
                 with col_v1:
