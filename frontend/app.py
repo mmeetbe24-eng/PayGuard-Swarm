@@ -432,11 +432,9 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
     img_hash = hashlib.sha256(img_bytes).hexdigest()[:24]
 
     # 1. Zero-Latency Memory Cache Check (Instant 0ms for repeated / old uploads)
-    if img_hash in st.session_state["vision_cache"]:
+    if "vision_cache" in st.session_state and img_hash in st.session_state["vision_cache"]:
         cached = st.session_state["vision_cache"][img_hash]
-        # Never serve stale generic fallback results from cache
-        if cached[0] != "Curated Quality Retail Product":
-            return cached[0], cached[1], cached[2], cached[3]
+        return cached[0], cached[1], cached[2], cached[3]
 
     fn = filename.lower() if filename else ""
 
@@ -481,58 +479,65 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
         except Exception:
             pass
 
-        # High-Speed REST Invocations with Strict 2.5s Timeout and JSON Mode
+        # High-Speed Gemini Multimodal Vision (Official GenAI SDK + Direct REST fallback)
+        try:
+            from google import genai
+            from google.genai import types
+            import re, json
+
+            client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
+            sdk_prompt = """
+            Identify the product in this photo with high precision.
+            Return strictly a JSON object:
+            {
+              "product_title": "<Specific product name, e.g. 'Apple MacBook Pro Laptop', 'Titan Quartz Wrist Watch', 'Pilot Rollerball Pen', 'Lay\\'s Classic Potato Chips'>",
+              "category": "<e.g. Computers & Tech, Watches & Jewelry, Office Supplies, Food & Grocery>",
+              "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 89990 for laptop, 4500 for watch, 120 for pen, 50 for chips>
+            }
+            """
+            image_part = types.Part.from_bytes(data=opt_bytes, mime_type=opt_mime)
+            for m_id in ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-001", "gemini-1.5-flash"]:
+                try:
+                    resp = client.models.generate_content(model=m_id, contents=[sdk_prompt, image_part])
+                    if resp and resp.text:
+                        m = re.search(r'\{.*\}', resp.text, re.DOTALL)
+                        if m:
+                            d = json.loads(m.group(0))
+                            title = str(d.get("product_title", "")).strip().replace('\\', '')
+                            b = float(d.get("suggested_budget_inr", 1500.0))
+                            cat = str(d.get("category", "General Retail")).strip()
+                            if title and len(title) > 2:
+                                res_tuple = (title, max(10.0, b), cat, "gemini")
+                                st.session_state["vision_cache"][img_hash] = res_tuple
+                                st.session_state["gemini_last_error"] = ""
+                                st.session_state["fast_gemini_model"] = m_id
+                                return res_tuple
+                except Exception as ex:
+                    st.session_state["gemini_last_error"] = str(ex)[:120]
+                    continue
+        except Exception as e:
+            st.session_state["gemini_last_error"] = str(e)[:120]
+
+        # Secondary Fast REST Invocations
         try:
             import base64, requests, re, json
             b64_img = base64.b64encode(opt_bytes).decode("utf-8")
-            rest_prompt = """
-            Analyze the product in this photo with high precision.
-            Return strictly a JSON object:
-            {
-              "product_title": "<Specific product name, e.g. 'Insulated Stainless Steel Water Bottle', 'Titan Quartz Wrist Watch', 'Pilot Rollerball Pen', 'Lay\'s Classic Potato Chips'>",
-              "category": "<e.g. Home & Kitchen, Watches & Jewelry, Office Supplies, Food & Grocery, Tech>",
-              "suggested_budget_inr": <Realistic retail price in Indian Rupees (₹), e.g. 799 for bottle, 4500 for watch, 120 for pen, 50 for chips>
-            }
-            """
             rest_payload = {
                 "contents": [{
                     "parts": [
-                        {"text": rest_prompt},
-                        {
-                            "inlineData": {
-                                "mimeType": opt_mime,
-                                "data": b64_img
-                            }
-                        }
+                        {"text": "Identify product strictly in JSON: {\"product_title\": \"...\", \"category\": \"...\", \"suggested_budget_inr\": 1000}"},
+                        {"inlineData": {"mimeType": opt_mime, "data": b64_img}}
                     ]
-                }],
-                "generationConfig": {
-                    "temperature": 0.1,
-                    "maxOutputTokens": 100
-                }
+                }]
             }
-
             key_str = str(api_key).strip()
-            # Fast model priority: Gemini 2.0 Flash first, followed by stable Google Cloud versioned aliases
-            models_to_test = ["gemini-2.0-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-latest", "gemini-1.5-flash"]
-            cached_m = st.session_state.get("fast_gemini_model")
-            if cached_m and cached_m in models_to_test:
-                models_to_test = [cached_m] + [m for m in models_to_test if m != cached_m]
-
-            # Universal auth headers: passes both Bearer (for OAuth/AQ. keys) and x-goog-api-key (for AIzaSy keys)
-            universal_headers = {
-                "Content-Type": "application/json",
-                "x-goog-api-key": key_str,
-                "Authorization": f"Bearer {key_str}"
-            }
-
-            for model_id in models_to_test:
-                endpoints_to_try = [
+            universal_headers = {"Content-Type": "application/json", "x-goog-api-key": key_str, "Authorization": f"Bearer {key_str}"}
+            for model_id in ["gemini-2.0-flash", "gemini-1.5-flash-001"]:
+                endpoints = [
                     (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent", universal_headers),
                     (f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={key_str}", {"Content-Type": "application/json"})
                 ]
-                model_succeeded = False
-                for url, hdrs in endpoints_to_try:
+                for url, hdrs in endpoints:
                     try:
                         resp = requests.post(url, json=rest_payload, headers=hdrs, timeout=3.0)
                         if resp.status_code == 200:
@@ -552,16 +557,11 @@ def classify_visual_product(img_bytes: bytes, filename: str = "", active_budget:
                                             res_tuple = (title, max(10.0, b), cat, "gemini")
                                             st.session_state["vision_cache"][img_hash] = res_tuple
                                             st.session_state["gemini_last_error"] = ""
-                                            st.session_state["fast_gemini_model"] = model_id
                                             return res_tuple
-                        else:
-                            st.session_state["gemini_last_error"] = f"HTTP {resp.status_code}: {resp.text[:100]}"
-                    except Exception as net_err:
-                        st.session_state["gemini_last_error"] = str(net_err)[:100]
-                if st.session_state.get("fast_gemini_model"):
-                    break
+                    except Exception:
+                        pass
         except Exception as e:
-            st.session_state["gemini_last_error"] = str(e)[:100]
+            pass
 
     # 3. Intelligent Computer Vision Chromatic & Heuristic Fallback (< 5ms response)
     try:
@@ -645,9 +645,8 @@ with col_left:
         if uploaded_image is not None:
             img_cache_key = f"{uploaded_image.name}_{uploaded_image.size}"
             
-            # Auto-analyze image on new upload or if previously stuck on stale generic fallback
-            force_reanalyze = (st.session_state.get("vis_detected_name") in ("Curated Quality Retail Product", "Identified Product"))
-            if st.session_state.get("active_img_cache_key") != img_cache_key or force_reanalyze:
+            # Auto-analyze image only when a new image file is uploaded
+            if st.session_state.get("active_img_cache_key") != img_cache_key:
                 img_bytes = uploaded_image.getvalue()
                 with st.spinner("🔍 AI Multimodal Vision analyzing product image..."):
                     d_name, s_budget, d_cat, eng = classify_visual_product(
