@@ -984,63 +984,8 @@ with col_right:
     
     if not has_active_directive:
         # User has not provided any directive, uploaded photo, or selected a preset
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%); border: 1.5px dashed rgba(56, 189, 248, 0.35); border-radius: 16px; padding: 36px 24px; text-align: center; margin-top: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); border: 1.5px solid rgba(56, 189, 248, 0.45); margin-bottom: 14px;">
-                <span style="font-size: 1.85rem;">⚡</span>
-            </div>
-            <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-                <span class="pill-badge pill-blue" style="font-size: 0.78rem; letter-spacing: 0.05em; font-weight: 700;">⚪ READY FOR MISSION — AWAITING DIRECTIVE</span>
-            </div>
-            <h3 style="color: #F8FAFC; margin: 6px 0 10px 0; font-weight: 700; font-size: 1.35rem;">PayGuard Swarm Standing By</h3>
-            <p style="color: #94A3B8; max-width: 520px; margin: 0 auto 22px auto; font-size: 0.90rem; line-height: 1.6;">
-                Autonomous multi-agent defense network is online. Enter any shopping directive on the left, upload a reference photo for <strong>Gemini Cloud Vision</strong>, or select a 1-click catalog preset to begin real-time multi-store market discovery & threat auditing.
-            </p>
-            
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; text-align: left;">
-                <div style="background: rgba(15, 23, 42, 0.65); border: 1px dashed rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span class="pill-badge pill-red" style="font-size: 0.7rem;">CANDIDATE #1</span>
-                            <span style="font-size: 0.75rem; color: #FCA5A5;">Discount Trap</span>
-                        </div>
-                        <div style="color: #F1F5F9; font-weight: 700; font-size: 0.88rem; margin-top: 6px;">Adversarial Sentry</div>
-                        <div style="color: #94A3B8; font-size: 0.78rem; margin-top: 4px; line-height: 1.4;">Standing by to inspect untrusted merchant HTML for hidden CSS injection traps.</div>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 0.75rem; color: #64748B;">Status: <em>Awaiting Query</em></div>
-                </div>
-                <div style="background: rgba(15, 23, 42, 0.65); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span class="pill-badge pill-green" style="font-size: 0.7rem;">CANDIDATE #2</span>
-                            <span style="font-size: 0.75rem; color: #6EE7B7;">Authentic Partner</span>
-                        </div>
-                        <div style="color: #34D399; font-weight: 700; font-size: 0.88rem; margin-top: 6px;">Certified Merchant</div>
-                        <div style="color: #94A3B8; font-size: 0.78rem; margin-top: 4px; line-height: 1.4;">Automated SLA, inventory, and partner identity verification in INR (₹).</div>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 0.75rem; color: #64748B;">Status: <em>Awaiting Query</em></div>
-                </div>
-                <div style="background: rgba(15, 23, 42, 0.65); border: 1px dashed rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span class="pill-badge pill-amber" style="font-size: 0.7rem;">CANDIDATE #3</span>
-                            <span style="font-size: 0.75rem; color: #FCD34D;">MSRP Ceiling</span>
-                        </div>
-                        <div style="color: #FBBF24; font-weight: 700; font-size: 0.88rem; margin-top: 6px;">Market Optimizer</div>
-                        <div style="color: #94A3B8; font-size: 0.78rem; margin-top: 4px; line-height: 1.4;">Calculates shipping tradeoffs and enforces max budget limits.</div>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 0.75rem; color: #64748B;">Status: <em>Awaiting Query</em></div>
-                </div>
-            </div>
-
-            <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(148, 163, 184, 0.15); display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; font-size: 0.8rem; color: #64748B;">
-                <span>🛡️ <strong style="color: #94A3B8;">Zero-PII Privacy Shield:</strong> Armed</span>
-                <span>⏱️ <strong style="color: #94A3B8;">Duplicate Interceptor:</strong> 10-Min Window</span>
-                <span>🔒 <strong style="color: #94A3B8;">Air-Gapped Vault:</strong> Ready</span>
-                <span>⚡ <strong style="color: #94A3B8;">PayPal Circuit Breaker:</strong> 2.1ms Void</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("⚡ **PayGuard Swarm Standing By — Ready for Mission**\n\nAwaiting your autonomous shopping directive, reference photo, or catalog preset to begin real-time multi-store market discovery & threat auditing.")
+        st.caption("🛡️ **Zero-PII Privacy Shield:** Armed  |  ⏱️ **Idempotency Interceptor:** 10-Min Window  |  🔒 **Air-Gapped Vault:** Ready  |  ⚡ **PayPal Circuit Breaker:** 2.1ms Void")
     else:
         # Always fetch or generate candidate stores for the current effective prompt and budget
         curr_p_query = effective_prompt
