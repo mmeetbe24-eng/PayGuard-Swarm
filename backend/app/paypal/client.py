@@ -86,12 +86,14 @@ class PayPalClient:
         merchant_name: str = "Merchant Partner",
         description: str = "PayGuard Zero-Trust Autonomous Order",
         custom_id: Optional[str] = None,
-        intent: str = "CAPTURE"
+        intent: str = "CAPTURE",
+        idempotency_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Calls PayPal POST /v2/checkout/orders.
+        Calls PayPal POST /v2/checkout/orders with standard PayPal-Request-Id idempotency protection.
         """
         token = self._get_access_token()
+        active_idempotency_id = idempotency_key or custom_id or str(uuid.uuid4())
         
         payload = {
             "intent": intent,
@@ -127,6 +129,7 @@ class PayPalClient:
                 "intent": intent,
                 "gross_amount": f"{amount:.2f}",
                 "currency": currency,
+                "idempotency_key": active_idempotency_id,
                 "create_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 "links": [
                     {"href": f"{self.base_url}/v2/checkout/orders/{order_id}", "rel": "self", "method": "GET"},
@@ -140,7 +143,7 @@ class PayPalClient:
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
-            "PayPal-Request-Id": custom_id or str(uuid.uuid4())
+            "PayPal-Request-Id": active_idempotency_id
         }
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=12)

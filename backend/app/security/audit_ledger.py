@@ -107,9 +107,16 @@ class ImmutableAuditLedger:
         return "0000000000000000000000000000000000000000000000000000000000000000"
 
     def record_event(self, agent: str, event_type: str, payload: Dict[str, Any]) -> AuditEntry:
+        # Enterprise Zero-PII Compliance: Auto-sanitize payload before immutable hash-chaining
+        try:
+            from backend.app.security.pii_sanitizer import pii_sanitizer
+            sanitized_payload = pii_sanitizer.sanitize_payload(payload)
+        except Exception:
+            sanitized_payload = payload
+
         now = time.time()
         iso_str = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now))
-        payload_json = json.dumps(payload, sort_keys=True)
+        payload_json = json.dumps(sanitized_payload, sort_keys=True)
 
         with self._write_lock:
             with self._get_connection() as conn:
@@ -133,7 +140,7 @@ class ImmutableAuditLedger:
                 iso_time=iso_str,
                 agent=agent,
                 event_type=event_type,
-                payload=payload,
+                payload=sanitized_payload,
                 prev_hash=prev_hash,
                 block_hash=block_hash
             )

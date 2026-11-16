@@ -34,6 +34,9 @@ class SwarmExecutionResult(BaseModel):
     failover_recovery_note: Optional[str] = None
     audit_hash: Optional[str] = None
     journey_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    is_duplicate_intercepted: bool = False
+    duplicate_warning: Optional[str] = None
+    idempotency_key: Optional[str] = None
 
 class PayGuardSwarmOrchestrator:
     """
@@ -55,17 +58,95 @@ class PayGuardSwarmOrchestrator:
         is_shielded_by_payguard: bool = True,
         simulate_midflight_tamper: bool = False,
         max_delivery_days: Optional[int] = None,
-        delivery_zip: str = ""
+        delivery_zip: str = "",
+        override_duplicate_confirmation: bool = False
     ) -> SwarmExecutionResult:
         start_time = time.perf_counter()
 
+        # Step 0: Enterprise Zero-PII Data Privacy & Redaction Gate (PCI-DSS & GDPR Compliance)
+        from backend.app.security.pii_sanitizer import pii_sanitizer
+        pii_report = pii_sanitizer.sanitize_text(user_prompt)
+        safe_user_prompt = pii_report.sanitized_text
+
+        if pii_report.has_pii:
+            audit_ledger.record_event(
+                agent="Zero-PII Privacy Shield",
+                event_type="PII_DATA_REDACTION_EXECUTED",
+                payload={
+                    "redaction_count": pii_report.redaction_count,
+                    "redactions": pii_report.redactions,
+                    "compliance_standard": "PCI-DSS 3.4 & GDPR Article 25 Zero-Knowledge Privacy",
+                    "safe_prompt_sample": safe_user_prompt[:80]
+                }
+            )
+
+        # Step 0.5: Smart Idempotency & Duplicate Order Interceptor
+        from backend.app.security.duplicate_detector import duplicate_detector
+        dup_check = duplicate_detector.check_duplicate(safe_user_prompt, max_budget_ceiling)
+        if is_shielded_by_payguard and dup_check.is_duplicate and not override_duplicate_confirmation:
+            elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            audit_entry = audit_ledger.record_event(
+                agent="Idempotency Interceptor",
+                event_type="DUPLICATE_ORDER_INTERCEPTED",
+                payload={
+                    "item": dup_check.normalized_product,
+                    "budget": max_budget_ceiling,
+                    "previous_order_id": dup_check.previous_order_id,
+                    "time_ago_seconds": dup_check.time_ago_seconds,
+                    "idempotency_key": dup_check.idempotency_key,
+                    "protection": "Double-billing prevented; awaiting user confirmation"
+                }
+            )
+            mock_draft = DraftOrderIntent(
+                item_name=dup_check.normalized_product or "Duplicate Reference Item",
+                target_merchant_id="INTERCEPTED",
+                target_merchant_name="Duplicate Suppression Engine",
+                unit_price=max_budget_ceiling,
+                quantity=1,
+                total_price=max_budget_ceiling,
+                currency="INR",
+                advertised_specs="Identical order detected within 10-minute sliding window.",
+                raw_untrusted_html="<!-- Duplicate Intercepted -->",
+                negotiation_reasoning="Identical order detected within 10-minute sliding window.",
+                hijacked_by_injection=False
+            )
+            journey_steps = [
+                {
+                    "num": "STEP 1", "icon": "⚠️", "title": "Duplicate Order Detected", 
+                    "badge": "🟡 INTERCEPTED", "badge_color": "#F59E0B", "border": "#F59E0B",
+                    "text": dup_check.warning_message
+                },
+                {
+                    "num": "STEP 2", "icon": "🛡️", "title": "PayPal Wallet Protected (₹0 Spent)", 
+                    "badge": "🟢 SAFEGUARDED", "badge_color": "#10B981", "border": "#10B981",
+                    "text": f"Idempotency token '{dup_check.idempotency_key}' triggered autonomous transaction pause. Please confirm below if you genuinely want a second item."
+                }
+            ]
+            return SwarmExecutionResult(
+                success=False,
+                scenario_mode="DUPLICATE_ORDER_INTERCEPTED",
+                target_store="Duplicate Interception Shield",
+                user_prompt=user_prompt,
+                user_budget_ceiling=max_budget_ceiling,
+                total_execution_ms=elapsed_ms,
+                agent1_shopper_draft=mock_draft,
+                final_status="INTERCEPTED_DUPLICATE",
+                financial_outcome="₹0.00 (Zero Funds Charged - Duplicate Intercepted)",
+                failover_recovery_note=dup_check.warning_message,
+                audit_hash=audit_entry.block_hash,
+                journey_steps=journey_steps,
+                is_duplicate_intercepted=True,
+                duplicate_warning=dup_check.warning_message,
+                idempotency_key=dup_check.idempotency_key
+            )
+
         # Step 1: Generate live dynamic market stores
-        store_a, store_b, store_c = dynamic_market.generate_market_live(user_prompt, max_budget_ceiling)
+        store_a, store_b, store_c = dynamic_market.generate_market_live(safe_user_prompt, max_budget_ceiling)
         candidate_stores = [store_b, store_a, store_c] if store_choice in ["AUTO", "STORE_B"] else [store_a, store_b, store_c]
 
         # Step 2: Agent 1 (Commerce Negotiator) evaluates stores and drafts intent
         draft = shopper_agent.negotiate_and_compare(
-            user_prompt=user_prompt,
+            user_prompt=safe_user_prompt,
             user_budget_ceiling=max_budget_ceiling,
             target_store_choice=store_choice,
             is_shielded_by_payguard=is_shielded_by_payguard,
@@ -369,6 +450,16 @@ class PayGuardSwarmOrchestrator:
                     "text": f"Agent 6 generated {shipment_d.carrier_name} waybill ({shipment_d.tracking_number}). Cryptographic seal #{shipment_d.security_seal_hash} active. Status: In Transit (ETA: {shipment_d.estimated_delivery})."
                 }
             ]
+            if recovered_vault_receipt.authorized:
+                from backend.app.security.duplicate_detector import duplicate_detector
+                duplicate_detector.record_order(
+                    order_id=recovered_vault_receipt.paypal_order_id or recovered_vault_receipt.paypal_capture_id or "ORDER_SETTLED",
+                    prompt=safe_user_prompt,
+                    amount=safe_price,
+                    currency="INR",
+                    status="COMPLETED"
+                )
+
             return SwarmExecutionResult(
                 success=True,
                 scenario_mode="MIDFLIGHT_TAMPER_VOID",
@@ -481,6 +572,16 @@ class PayGuardSwarmOrchestrator:
                 "badge": f"🚚 {shipment.carrier_badge}", "badge_color": "#38BDF8", "border": "#38BDF8",
                 "text": f"Agent 6 generated {shipment.carrier_name} waybill ({shipment.tracking_number}). Package cryptographically sealed (Seal #{shipment.security_seal_hash}). In Transit to {shipment.destination_city} (ETA: {shipment.estimated_delivery})."
             })
+
+        if vault_receipt.authorized:
+            from backend.app.security.duplicate_detector import duplicate_detector
+            duplicate_detector.record_order(
+                order_id=vault_receipt.paypal_order_id or vault_receipt.paypal_capture_id or "ORDER_SETTLED",
+                prompt=safe_user_prompt,
+                amount=safe_price,
+                currency="INR",
+                status="COMPLETED"
+            )
 
         return SwarmExecutionResult(
             success=vault_receipt.authorized,

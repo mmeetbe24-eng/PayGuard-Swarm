@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from backend.app.config import settings
 from backend.app.security.ephemeral_token import EphemeralTokenEngine, EphemeralScopedToken, TokenVerificationResult
 from backend.app.security.audit_ledger import audit_ledger
+from backend.app.security.vault_crypto import vault_crypto
 from backend.app.paypal.client import paypal_client
 
 class EnclaveAuthorizationReceipt(BaseModel):

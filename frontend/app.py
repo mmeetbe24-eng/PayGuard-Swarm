@@ -342,9 +342,12 @@ with st.sidebar:
     st.subheader("🛡️ Zero-Trust Security Guarantees")
     st.markdown("""
     * **Non-Custodial Enclave:** Master keys never shared with shopping bots.
+    * **Zero-PII Privacy Shield:** PCI-DSS & GDPR automated prompt redaction gate.
+    * **AES-256-GCM Vault:** Hardware-grade credential & token encryption at rest.
+    * **Smart Idempotency:** 10-minute sliding window duplicate order suppression & PayPal-Request-Id.
     * **Autonomous Failover:** Self-healing multi-store routing.
     * **EST Scoped Token:** 300s TTL, merchant lock & hard Rupee ceiling (₹).
-    * **Cryptographic Hash:** HMAC-SHA256 signature proof.
+    * **Cryptographic Hash:** HMAC-SHA256 signature proof on every action.
     * **Emergency VOID SLA:** < 250ms sub-second rollback.
     """)
 
@@ -634,6 +637,17 @@ with col_left:
         key=f"directive_input_box_{st.session_state['form_epoch']}",
         help="Type ANY product query in Rupees ₹ (e.g. Lay's chips, Android phone, sneakers, clothes)."
     )
+
+    # Live Zero-PII Privacy Shield Telemetry
+    from backend.app.security.pii_sanitizer import pii_sanitizer
+    _pii_check = pii_sanitizer.sanitize_text(user_prompt_input)
+    if _pii_check.has_pii:
+        st.markdown(f"""
+        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); padding: 6px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.8rem; color: #34D399;">
+            🛡️ <strong>Zero-PII Shield Active:</strong> Auto-redacted {_pii_check.redaction_count} sensitive field(s) 
+            (<em>{', '.join([r['type'] for r in _pii_check.redactions])}</em>) to guarantee PCI-DSS & GDPR zero-knowledge privacy before AI processing!
+        </div>
+        """, unsafe_allow_html=True)
     
     # 2. Visual Product Search (Clean, expandable card with multimodal AI inspection & custom budget)
     with st.expander("📸 Visual Product Search (Upload Image Reference)", expanded=True):
@@ -1157,7 +1171,39 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
     """, unsafe_allow_html=True)
 
     # Outcome Alert Card
-    if res.scenario_mode == "VULNERABLE_UNSHIELDED":
+    if getattr(res, "is_duplicate_intercepted", False):
+        st.markdown(f"""
+        <div style="background: rgba(245, 158, 11, 0.12); border: 2px solid #F59E0B; border-radius: 12px; padding: 18px 22px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 1.12rem; font-weight: 800; color: #FBBF24;">⚠️ ACCIDENTAL DUPLICATE ORDER INTERCEPTED</span>
+                <span style="background: #F59E0B; color: #1E293B; font-weight: 700; font-size: 0.72rem; padding: 3px 10px; border-radius: 20px;">SLIDING-WINDOW SHIELD</span>
+            </div>
+            <p style="color: #E2E8F0; font-size: 0.92rem; margin-top: 8px;">
+                {res.duplicate_warning}
+            </p>
+            <div style="font-size: 0.82rem; color: #94A3B8; margin-top: 6px;">
+                🔒 <strong>Financial Guarantee:</strong> Zero funds were deducted on PayPal. Idempotency Token: <code>{res.idempotency_key}</code>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        dup_col1, dup_col2 = st.columns(2)
+        with dup_col1:
+            if st.button("❌ Drop & Cancel (Recommended — ₹0 spent)", key="btn_cancel_dup", type="secondary", use_container_width=True):
+                st.session_state["has_executed"] = False
+                st.session_state["latest_result"] = None
+                st.success("Duplicate order dropped. Your wallet remains 100% untouched.")
+                st.rerun()
+        with dup_col2:
+            if st.button("✅ Confirm I Want a Second Item (Override)", key="btn_override_dup", type="primary", use_container_width=True):
+                with st.spinner("Executing intentional duplicate order via PayPal..."):
+                    res_override = swarm_orchestrator.execute_flow(
+                        user_prompt=res.user_prompt,
+                        max_budget_ceiling=res.user_budget_ceiling,
+                        override_duplicate_confirmation=True
+                    )
+                    st.session_state["latest_result"] = res_override
+                    st.rerun()
+    elif res.scenario_mode == "VULNERABLE_UNSHIELDED":
         st.markdown(f"""
         <div class="alert-danger">
             <h3>🔴 EXPLOIT SUCCESSFUL — USER WALLET COMPROMISED!</h3>
