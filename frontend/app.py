@@ -352,23 +352,28 @@ st.markdown("""
     }
 
     /* 5. Streamlit Alert Boxes (st.info, st.success, st.warning, st.error) */
-    /* Prevents white-on-white text by forcing dark cyber backgrounds with bright text */
-    [data-testid="stAlert"] {
-        background: rgba(15, 23, 42, 0.95) !important;
-        border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+    /* Prevents white-on-white text by forcing dark cyber backgrounds on BaseWeb containers */
+    div[data-testid="stAlert"], 
+    div[data-testid="stAlert"] > div, 
+    div[data-baseweb="notification"], 
+    div[data-baseweb="notification"] > div,
+    .stAlert, 
+    .stAlert > div {
+        background-color: #0F172A !important;
+        background: #0F172A !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
         border-radius: 10px !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
     }
-    [data-testid="stAlert"] div, 
-    [data-testid="stAlert"] span, 
-    [data-testid="stAlert"] p {
+    div[data-testid="stAlert"] *, 
+    div[data-baseweb="notification"] *, 
+    .stAlert * {
         color: #F8FAFC !important;
-        font-size: 0.88rem !important;
-        font-weight: 500 !important;
     }
-    [data-testid="stAlert"] code {
+    div[data-testid="stAlert"] code, 
+    div[data-baseweb="notification"] code {
         color: #38BDF8 !important;
-        background: #0B0F19 !important;
+        background: #080D1A !important;
         font-weight: 700 !important;
     }
 
@@ -452,6 +457,51 @@ st.markdown("""
         background: rgba(15, 23, 42, 0.95) !important;
         border: 1px solid #38BDF8 !important;
         border-bottom: 2px solid #38BDF8 !important;
+    }
+
+    /* 9. Sidebar Navigation Links (Fixes invisible dark grey links in Image 2) */
+    [data-testid="stSidebarNav"] {
+        background-color: transparent !important;
+        margin-bottom: 0.5rem !important;
+    }
+    [data-testid="stSidebarNav"] * {
+        color: #F8FAFC !important;
+    }
+    [data-testid="stSidebarNavItems"] li {
+        margin-bottom: 6px !important;
+    }
+    [data-testid="stSidebarNavItems"] li a {
+        background: rgba(15, 23, 42, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 8px !important;
+        padding: 8px 14px !important;
+        display: flex !important;
+        align-items: center !important;
+        transition: all 0.2s ease !important;
+        text-decoration: none !important;
+    }
+    [data-testid="stSidebarNavItems"] li a span,
+    [data-testid="stSidebarNav"] span,
+    [data-testid="stSidebarNav"] a,
+    [data-testid="stSidebarNav"] p {
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+    }
+    [data-testid="stSidebarNavItems"] li a:hover {
+        background: rgba(56, 189, 248, 0.2) !important;
+        border-color: #38BDF8 !important;
+    }
+    [data-testid="stSidebarNavItems"] li a:hover span {
+        color: #38BDF8 !important;
+    }
+    [data-testid="stSidebarNavItems"] li a[aria-current="page"] {
+        background: rgba(56, 189, 248, 0.25) !important;
+        border: 1.5px solid #38BDF8 !important;
+    }
+    [data-testid="stSidebarNavItems"] li a[aria-current="page"] span {
+        color: #38BDF8 !important;
+        font-weight: 800 !important;
     }
 </style>
 """, unsafe_allow_html=True)
