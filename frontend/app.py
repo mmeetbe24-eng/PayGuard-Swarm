@@ -503,6 +503,37 @@ st.markdown("""
         color: #38BDF8 !important;
         font-weight: 800 !important;
     }
+
+    /* 10. High-Contrast Streamlit Tables (st.table, table, th, td) */
+    [data-testid="stTable"], 
+    .stTable, 
+    table {
+        background-color: rgba(15, 23, 42, 0.85) !important;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        width: 100% !important;
+    }
+    [data-testid="stTable"] th, 
+    .stTable th, 
+    table th {
+        background-color: #0F172A !important;
+        color: #38BDF8 !important;
+        font-weight: 800 !important;
+        font-size: 0.92rem !important;
+        padding: 12px 14px !important;
+        border-bottom: 2px solid rgba(56, 189, 248, 0.4) !important;
+    }
+    [data-testid="stTable"] td, 
+    .stTable td, 
+    table td {
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        color: #F8FAFC !important;
+        font-weight: 500 !important;
+        font-size: 0.88rem !important;
+        padding: 12px 14px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 

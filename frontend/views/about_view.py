@@ -204,15 +204,46 @@ def render_about_page():
 
     # 5. Competitive Comparison Matrix
     st.markdown("## 📊 How We Compare to Other Approaches")
-    matrix_data = [
-        {"Feature": "Master Key Exposure to Shopping Bot", "Standard AI Shopping Bot": "❌ Full API Key Exposed", "PayPal Checkout Alone": "❌ API Key or Session Cookie", "PayGuard Swarm": "✅ Zero Exposure (Non-Custodial)"},
-        {"Feature": "Indirect Prompt Injection Defense", "Standard AI Shopping Bot": "❌ None (Vulnerable to ₹995 hijack)", "PayPal Checkout Alone": "❌ N/A (Doesn't inspect DOM)", "PayGuard Swarm": "✅ Dual-Layer Sentry + Enclave Ceiling"},
-        {"Feature": "Action on Attack", "Standard AI Shopping Bot": "❌ Approves Exploit", "PayPal Checkout Alone": "❌ Processes Charge", "PayGuard Swarm": "✅ Quarantines & Autonomously Re-Routes"},
-        {"Feature": "Emergency Void SLA", "Standard AI Shopping Bot": "❌ Manual Human Support", "PayPal Checkout Alone": "❌ Manual Dashboard", "PayGuard Swarm": "✅ < 2.5ms Autonomous Gateway VOID"},
-        {"Feature": "Micro-Payment Fee Efficiency", "Standard AI Shopping Bot": "❌ Burns standard fee/order", "PayPal Checkout Alone": "❌ Standard Fixed Fee", "PayGuard Swarm": "✅ ~85% Savings via Micro-Batching"},
-        {"Feature": "Immutable Audit Trail", "Standard AI Shopping Bot": "❌ Console Prints", "PayPal Checkout Alone": "✔ Standard Ledger", "PayGuard Swarm": "✅ SHA-256 Chained Ledger + PDF Cert"}
+    st.caption("Side-by-side architecture comparison highlighting PayGuard's defense-in-depth model:")
+
+    comparison_rows = [
+        ("Master Key Exposure to Shopping Bot", "❌ Full API Key Exposed", "❌ API Key or Session Cookie", "✅ Zero Exposure (Non-Custodial Enclave)"),
+        ("Indirect Prompt Injection Defense", "❌ None (Vulnerable to ₹995 hijack)", "❌ N/A (Doesn't inspect DOM)", "✅ Dual-Layer Sentry + Enclave Ceiling"),
+        ("Action on Attack / Fraud", "❌ Approves Exploit", "❌ Processes Charge", "✅ Quarantines & Autonomously Re-Routes"),
+        ("Emergency Void SLA", "❌ Manual Human Support", "❌ Manual Dashboard", "✅ < 2.5ms Autonomous Gateway VOID"),
+        ("Micro-Payment Fee Efficiency", "❌ Burns standard fee/order", "❌ Standard Fixed Fee", "✅ ~85% Savings via Micro-Batching"),
+        ("Immutable Audit Trail", "❌ Ephemeral Console Prints", "✔ Standard Bank Statement", "✅ SHA-256 Chained Ledger + PDF Cert")
     ]
-    st.table(matrix_data)
+
+    table_rows_html = ""
+    for idx, (feat, bot, pp, pg) in enumerate(comparison_rows):
+        bg = "rgba(15, 23, 42, 0.75)" if idx % 2 == 0 else "rgba(30, 41, 59, 0.55)"
+        table_rows_html += f"""
+        <tr style="background: {bg}; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+            <td style="padding: 14px 16px; font-weight: 700; color: #F8FAFC; font-size: 0.90rem;">{feat}</td>
+            <td style="padding: 14px 16px; color: #FCA5A5; font-size: 0.88rem;">{bot}</td>
+            <td style="padding: 14px 16px; color: #FDE68A; font-size: 0.88rem;">{pp}</td>
+            <td style="padding: 14px 16px; font-weight: 700; color: #6EE7B7; background: rgba(16, 185, 129, 0.12); font-size: 0.88rem;">{pg}</td>
+        </tr>
+        """
+
+    st.markdown(f"""
+    <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 12px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: #0B0F19; border-bottom: 2px solid rgba(56, 189, 248, 0.45);">
+                    <th style="padding: 14px 16px; color: #38BDF8; font-weight: 800; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.04em;">Feature / Capability</th>
+                    <th style="padding: 14px 16px; color: #F87171; font-weight: 800; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.04em;">Standard AI Shopping Bot</th>
+                    <th style="padding: 14px 16px; color: #FBBF24; font-weight: 800; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.04em;">PayPal Checkout Alone</th>
+                    <th style="padding: 14px 16px; color: #34D399; font-weight: 800; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.04em; background: rgba(16, 185, 129, 0.15);">PayGuard Swarm</th>
+                </tr>
+            </thead>
+            <tbody>
+                {table_rows_html}
+            </tbody>
+        </table>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
     btn_col1, btn_col2, btn_col3 = st.columns(3)
