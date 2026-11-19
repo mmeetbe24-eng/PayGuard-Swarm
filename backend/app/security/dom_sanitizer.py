@@ -113,6 +113,17 @@ class DOMSanitizer:
                     evidence=match.group(0)
                 ))
 
+        # 4. Detect Base64-encoded steganographic payloads
+        b64_matches = re.findall(r'(?:data:[^;]+;base64,|base64\s*,\s*)([A-Za-z0-9+/=]{24,})', cleaned, re.IGNORECASE)
+        if b64_matches:
+            flags.append(AnomalyFlag(
+                category="BASE64_OBFUSCATION",
+                severity="HIGH",
+                description="Encoded Base64 payload detected in merchant markup.",
+                evidence=b64_matches[0][:60] + "..."
+            ))
+            risk_score += 0.35
+
         # Clamp risk score between 0.0 and 1.0
         final_risk_score = min(round(risk_score, 2), 1.0)
         is_safe = final_risk_score < 0.35 and not any(f.severity == "CRITICAL" for f in flags)

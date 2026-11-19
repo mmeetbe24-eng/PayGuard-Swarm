@@ -5,8 +5,16 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
+import pytest
 from backend.app.agents.swarm_orchestrator import swarm_orchestrator
 from backend.app.security.audit_ledger import audit_ledger
+from backend.app.security.duplicate_detector import duplicate_detector
+
+@pytest.fixture(autouse=True)
+def clean_idempotency_between_scenarios():
+    duplicate_detector.clear_history()
+    yield
+    duplicate_detector.clear_history()
 
 def test_legitimate_store_a():
     print("\n" + "="*70)
@@ -101,6 +109,20 @@ def test_audit_ledger_integrity():
     print(f"Verification Message: {verification['message']}")
     assert verification["valid"] is True
     print("[TEST 5 PASSED]: Tamper-evident hash-chained audit ledger is 100% untampered!")
+
+def test_delivery_sla_tracking():
+    result = swarm_orchestrator.execute_flow(
+        user_prompt="Buy Sony WH-1000XM5 under $250 using PayPal",
+        store_choice="AUTO",
+        max_budget_ceiling=250.00,
+        is_shielded_by_payguard=True,
+        max_delivery_days=2,
+        delivery_zip="San Jose, CA 95131"
+    )
+    assert result.success is True
+    for entry in result.agent1_shopper_draft.comparison_log:
+        assert entry.delivery_days is not None
+        assert entry.delivery_str != ""
 
 if __name__ == "__main__":
     test_legitimate_store_a()
