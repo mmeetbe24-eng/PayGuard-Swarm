@@ -196,7 +196,14 @@ def render_backend_enclave_page():
                             st.warning("⚠️ Webhook received! Transit SLA breached. Agent 6 autonomously initiated a ₹200.00 PayPal compensation refund.")
                             st.rerun()
         else:
-            st.info("ℹ️ No mission executed yet in this session. Run any order from the **Live Autonomous Cockpit** to inspect real-time agent decision traces here.")
+            st.markdown("""
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 10px; padding: 18px 22px; margin: 12px 0;">
+                <div style="font-weight: 700; color: #38BDF8; font-size: 0.95rem; margin-bottom: 4px;">ℹ️ Enclave Standby: No Mission Executed Yet in This Session</div>
+                <div style="color: #CBD5E1; font-size: 0.88rem; line-height: 1.5;">
+                    Run any order directive from the <strong>Live Autonomous Cockpit</strong> to inspect real-time agent decision traces here.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # TAB 2: AG Grid Tamper-Evident Ledger
     with tab_ledger:

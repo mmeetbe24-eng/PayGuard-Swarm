@@ -426,6 +426,33 @@ st.markdown("""
     [data-testid="stSidebar"] small {
         color: #94A3B8 !important;
     }
+
+    /* 8. Streamlit Tabs High-Contrast Crisp Typography */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px !important;
+        background-color: transparent !important;
+    }
+    .stTabs button[data-baseweb="tab"] {
+        color: #CBD5E1 !important;
+        font-weight: 700 !important;
+        font-size: 0.92rem !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 8px 16px !important;
+        transition: all 0.2s ease !important;
+    }
+    .stTabs button[data-baseweb="tab"]:hover {
+        color: #FFFFFF !important;
+        background: rgba(30, 41, 59, 0.8) !important;
+        border-color: #38BDF8 !important;
+    }
+    .stTabs button[data-baseweb="tab"][aria-selected="true"] {
+        color: #38BDF8 !important;
+        background: rgba(15, 23, 42, 0.95) !important;
+        border: 1px solid #38BDF8 !important;
+        border-bottom: 2px solid #38BDF8 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -442,16 +469,28 @@ with st.sidebar:
     if paypal_client.is_configured():
         paypal_client._get_access_token()
         if paypal_client.auth_ok:
-            st.success("🟢 PayPal Sandbox: LIVE REST API (Authenticated)")
-            st.caption(f"Client ID: `{paypal_client.client_id[:12]}...`")
-            st.caption("Mode: `LIVE_SANDBOX_ORDERS_V2`")
+            st.markdown(f"""
+            <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid #10B981; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+                <div style="font-weight: 700; color: #34D399; font-size: 0.86rem;">🟢 PayPal Sandbox: LIVE REST API</div>
+                <div style="color: #94A3B8; font-size: 0.74rem; margin-top: 2px;">Client: <code style="color: #38BDF8; background: #0B0F19;">{paypal_client.client_id[:12]}...</code></div>
+                <div style="color: #CBD5E1; font-size: 0.74rem; margin-top: 2px;">Mode: <span style="color: #34D399; font-weight: 600;">LIVE_SANDBOX_ORDERS_V2</span></div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.warning("🟡 PayPal Sandbox: CONFIGURED (Safe Mode)")
-            st.caption(f"Client ID: `{paypal_client.client_id[:12]}...`")
-            st.caption("Mode: `HYBRID_SIMULATED_CAPTURE`")
+            st.markdown(f"""
+            <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid #F59E0B; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+                <div style="font-weight: 700; color: #FBBF24; font-size: 0.86rem;">🟡 PayPal Sandbox: CONFIGURED (Safe Mode)</div>
+                <div style="color: #94A3B8; font-size: 0.74rem; margin-top: 2px;">Client: <code style="color: #38BDF8; background: #0B0F19;">{paypal_client.client_id[:12]}...</code></div>
+                <div style="color: #CBD5E1; font-size: 0.74rem; margin-top: 2px;">Mode: <span style="color: #FBBF24; font-weight: 600;">HYBRID_SIMULATED_CAPTURE</span></div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
-        st.info("⚪ PayPal Sandbox: HIGH-FIDELITY EMULATOR")
-        st.caption("Mode: `LOCAL_ENCLAVE_EMULATION`")
+        st.markdown("""
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid #38BDF8; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+            <div style="font-weight: 700; color: #F8FAFC; font-size: 0.86rem;">⚪ PayPal Sandbox: HIGH-FIDELITY EMULATOR</div>
+            <div style="color: #CBD5E1; font-size: 0.74rem; margin-top: 4px;">Mode: <span style="color: #38BDF8; font-weight: 600; background: rgba(56,189,248,0.15); padding: 2px 6px; border-radius: 4px;">LOCAL_ENCLAVE_EMULATION</span></div>
+        </div>
+        """, unsafe_allow_html=True)
     
     active_gemini_key = (
         st.session_state.get("runtime_gemini_key")
@@ -461,10 +500,19 @@ with st.sidebar:
     )
     if active_gemini_key:
         os.environ["GEMINI_API_KEY"] = str(active_gemini_key)
-        st.success(f"🟢 AI Core: Google Gemini Active ({settings.DEFAULT_GEMINI_MODEL})")
-        st.caption("Mode: `LIVE_MULTIMODAL_CLOUD_VISION`")
+        st.markdown(f"""
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid #10B981; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+            <div style="font-weight: 700; color: #34D399; font-size: 0.86rem;">🟢 AI Core: Google Gemini Active ({settings.DEFAULT_GEMINI_MODEL})</div>
+            <div style="color: #CBD5E1; font-size: 0.74rem; margin-top: 4px;">Mode: <span style="color: #34D399; font-weight: 600; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">LIVE_MULTIMODAL_CLOUD_VISION</span></div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.warning("⚠️ AI Core: Local Rule Engine")
+        st.markdown("""
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid #F59E0B; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+            <div style="font-weight: 700; color: #FBBF24; font-size: 0.86rem;">⚠️ AI Core: Local Rule Engine</div>
+            <div style="color: #94A3B8; font-size: 0.74rem; margin-top: 2px;">Cloud Vision Offline &bull; Add Key Below</div>
+        </div>
+        """, unsafe_allow_html=True)
         with st.expander("🔑 Add Gemini API Key (Live AI Vision)", expanded=True):
             st.caption("Provide a Google Gemini API Key to enable live cloud vision analysis:")
             k_in = st.text_input("Gemini API Key", type="password", key="side_gemini_key_input")
@@ -1134,8 +1182,22 @@ with col_right:
     
     if not has_active_directive:
         # User has not provided any directive, uploaded photo, or selected a preset
-        st.info("⚡ **PayGuard Swarm Standing By — Ready for Mission**\n\nAwaiting your autonomous shopping directive, reference photo, or catalog preset to begin real-time multi-store market discovery & threat auditing.")
-        st.caption("🛡️ **Zero-PII Privacy Shield:** Armed  |  ⏱️ **Idempotency Interceptor:** 10-Min Window  |  🔒 **Air-Gapped Vault:** Ready  |  ⚡ **PayPal Circuit Breaker:** 2.1ms Void")
+        st.markdown("""
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid rgba(56, 189, 248, 0.45); border-radius: 12px; padding: 20px 22px; margin-bottom: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
+            <div style="font-size: 1.05rem; font-weight: 800; color: #38BDF8; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span>⚡</span> <span>PayGuard Swarm Standing By &mdash; Ready for Mission</span>
+            </div>
+            <p style="color: #E2E8F0; font-size: 0.92rem; margin: 0 0 14px 0; line-height: 1.6;">
+                Awaiting your autonomous shopping directive, reference photo, or catalog preset to begin real-time multi-store market discovery &amp; threat auditing.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.78rem; padding-top: 10px; border-top: 1px solid #1E293B;">
+                <span style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; padding: 3px 10px; border-radius: 6px; font-weight: 600;">🛡️ Zero-PII Shield: Armed</span>
+                <span style="background: rgba(16, 185, 129, 0.15); color: #34D399; padding: 3px 10px; border-radius: 6px; font-weight: 600;">⏱️ Idempotency: 10-Min</span>
+                <span style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; padding: 3px 10px; border-radius: 6px; font-weight: 600;">🔒 Vault: Ready</span>
+                <span style="background: rgba(239, 68, 68, 0.15); color: #F87171; padding: 3px 10px; border-radius: 6px; font-weight: 600;">⚡ Void SLA: &lt; 2.5ms</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         # Always fetch or generate candidate stores for the current effective prompt and budget
         curr_p_query = effective_prompt
@@ -1429,7 +1491,14 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         </div>
         """, unsafe_allow_html=True)
 
-        st.info("🛡️ **PayGuard Non-Custodial Delivery Guarantee:** Agent 6 monitors live courier telemetry in the background. If transit time exceeds promised SLA window, Agent 6 autonomously invokes PayPal Dispute & Refund APIs to claim compensation for the customer.")
+        st.markdown("""
+        <div style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 14px 18px; margin: 12px 0;">
+            <div style="font-weight: 700; color: #34D399; font-size: 0.9rem;">🛡️ PayGuard Non-Custodial Delivery Guarantee</div>
+            <div style="color: #CBD5E1; font-size: 0.85rem; margin-top: 4px; line-height: 1.5;">
+                Agent 6 monitors live courier telemetry in the background. If transit time exceeds promised SLA window, Agent 6 autonomously invokes PayPal Dispute &amp; Refund APIs to claim compensation for the customer.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Downloadable Proof-of-Safety Certificate as PDF & JSON
     if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
