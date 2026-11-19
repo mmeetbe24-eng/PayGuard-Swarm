@@ -203,17 +203,33 @@ def render_backend_enclave_page():
         st.markdown("### 📜 Tamper-Evident Hash-Chained Audit Ledger")
         st.caption("Cryptographically linked immutable event blocks signed with HMAC-SHA256 (RFC 2104).")
 
-        entries = audit_ledger.get_all_entries()
+        try:
+            if hasattr(audit_ledger, "get_all_entries"):
+                entries = audit_ledger.get_all_entries()
+            elif hasattr(audit_ledger, "get_recent_entries"):
+                entries = audit_ledger.get_recent_entries(limit=1000)
+            else:
+                entries = []
+        except Exception:
+            entries = []
+
         table_data = []
         for e in entries:
+            b_id = getattr(e, "id", None) or getattr(e, "block_id", 0)
+            iso_t = getattr(e, "iso_time", "") or str(getattr(e, "timestamp", ""))
+            ag = getattr(e, "agent", "Enclave")
+            ev = getattr(e, "event_type", "EVENT")
+            pay = getattr(e, "payload", {})
+            pr_h = getattr(e, "prev_hash", "") or "0000000000000000"
+            bk_h = getattr(e, "block_hash", "") or "0000000000000000"
             table_data.append({
-                "Block ID": e.id if e.id is not None else 0,
-                "Timestamp": e.iso_time,
-                "Agent": e.agent,
-                "Event Type": e.event_type,
-                "Payload": json.dumps(e.payload) if isinstance(e.payload, dict) else str(e.payload),
-                "Prev Hash": (e.prev_hash[:16] + "...") if e.prev_hash else "0000000000000000...",
-                "Block Hash": (e.block_hash[:16] + "...") if e.block_hash else "0000000000000000..."
+                "Block ID": b_id,
+                "Timestamp": iso_t,
+                "Agent": ag,
+                "Event Type": ev,
+                "Payload": json.dumps(pay) if isinstance(pay, dict) else str(pay),
+                "Prev Hash": pr_h[:16] + "...",
+                "Block Hash": bk_h[:16] + "..."
             })
         df = pd.DataFrame(table_data)
 

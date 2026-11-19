@@ -293,23 +293,137 @@ st.markdown("""
         box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
     }
 
-    /* Sidebar High-Contrast Crisp White Styling */
-    [data-testid="stSidebar"], .stSidebar {
+    /* 1. Global High-Contrast Typography */
+    html, body, [data-testid="stAppViewContainer"], .main {
         background-color: #0B0F19 !important;
-    }
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] div, 
-    [data-testid="stSidebar"] li, 
-    [data-testid="stSidebar"] label,
-    .stSidebar p, .stSidebar span, .stSidebar li {
         color: #F8FAFC !important;
     }
-    [data-testid="stSidebar"] code, .stSidebar code {
+
+    /* 2. All Widget Labels (Inputs, Selects, Uploaders) */
+    label, 
+    [data-testid="stWidgetLabel"], 
+    [data-testid="stWidgetLabel"] p, 
+    [data-testid="stWidgetLabel"] span,
+    .stTextInput label, 
+    .stNumberInput label, 
+    .stFileUploader label, 
+    .stSelectbox label {
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* 3. Captions, Small Text & Descriptions */
+    .stCaption, small, [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {
+        color: #CBD5E1 !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* 4. Streamlit Metric Cards (Fixes invisible dark grey metrics) */
+    [data-testid="stMetric"] {
+        background: rgba(15, 23, 42, 0.75) !important;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        border-radius: 12px !important;
+        padding: 12px 14px !important;
+    }
+    [data-testid="stMetricLabel"], 
+    [data-testid="stMetricLabel"] p, 
+    [data-testid="stMetricLabel"] span, 
+    [data-testid="stMetricLabel"] div {
+        color: #94A3B8 !important;
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    [data-testid="stMetricValue"], 
+    [data-testid="stMetricValue"] div, 
+    [data-testid="stMetricValue"] span {
+        color: #38BDF8 !important;
+        font-weight: 800 !important;
+        font-size: 1.75rem !important;
+    }
+    [data-testid="stMetricDelta"], 
+    [data-testid="stMetricDelta"] div, 
+    [data-testid="stMetricDelta"] span {
+        color: #34D399 !important;
+        font-weight: 600 !important;
+        font-size: 0.82rem !important;
+    }
+
+    /* 5. Streamlit Alert Boxes (st.info, st.success, st.warning, st.error) */
+    /* Prevents white-on-white text by forcing dark cyber backgrounds with bright text */
+    [data-testid="stAlert"] {
+        background: rgba(15, 23, 42, 0.95) !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    }
+    [data-testid="stAlert"] div, 
+    [data-testid="stAlert"] span, 
+    [data-testid="stAlert"] p {
+        color: #F8FAFC !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+    }
+    [data-testid="stAlert"] code {
+        color: #38BDF8 !important;
+        background: #0B0F19 !important;
+        font-weight: 700 !important;
+    }
+
+    /* 6. File Uploader Styling (Prevents white button with white text) */
+    [data-testid="stFileUploader"] {
+        background: rgba(15, 23, 42, 0.8) !important;
+        border: 1.5px dashed rgba(56, 189, 248, 0.35) !important;
+        border-radius: 12px !important;
+        padding: 8px !important;
+    }
+    [data-testid="stFileUploader"] section {
+        background: rgba(15, 23, 42, 0.85) !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background: #1E293B !important;
+        color: #38BDF8 !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stFileUploader"] button:hover {
+        background: #38BDF8 !important;
+        color: #0F172A !important;
+    }
+    [data-testid="stFileUploader"] small, 
+    [data-testid="stFileUploader"] span, 
+    [data-testid="stFileUploader"] p {
+        color: #CBD5E1 !important;
+    }
+
+    /* 7. Sidebar High-Contrast Clean Typography */
+    [data-testid="stSidebar"], .stSidebar {
+        background-color: #0B0F19 !important;
+        border-right: 1px solid #1E293B !important;
+    }
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] h4 {
+        color: #F8FAFC !important;
+    }
+    [data-testid="stSidebar"] .stMarkdown p, 
+    [data-testid="stSidebar"] .stMarkdown span, 
+    [data-testid="stSidebar"] .stMarkdown li, 
+    [data-testid="stSidebar"] .stMarkdown strong {
+        color: #E2E8F0 !important;
+    }
+    [data-testid="stSidebar"] code {
         color: #38BDF8 !important;
         background: #1E293B !important;
+        padding: 2px 6px !important;
+        border-radius: 4px !important;
     }
-    [data-testid="stSidebar"] .stCaption, .stSidebar .stCaption {
+    [data-testid="stSidebar"] .stCaption, 
+    [data-testid="stSidebar"] small {
         color: #94A3B8 !important;
     }
 </style>
@@ -1268,38 +1382,23 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         st.subheader("📦 Live Courier & Delivery Tracking")
         st.caption(f"Real-time fulfillment tracking for waybill `{ship.tracking_number}` via {ship.carrier_name}.")
 
-        # Render Header Card with Carrier Badge, ETA, and Tamper-evident Seal
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <span style="background: rgba(56, 189, 248, 0.18); color: #38BDF8; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; border: 1px solid rgba(56, 189, 248, 0.4);">{ship.carrier_badge}</span>
-                    <span style="font-size: 1.15rem; font-weight: 800; color: #F8FAFC; margin-left: 10px;">Waybill: <code style="color: #38BDF8; background: #0F172A; padding: 2px 6px; border-radius: 4px;">{ship.tracking_number}</code></span>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.8rem; color: #94A3B8;">Guaranteed Delivery ETA:</div>
-                    <div style="font-size: 1.05rem; font-weight: 800; color: #34D399;">🕒 {ship.estimated_delivery}</div>
-                </div>
-            </div>
-            
-            <div style="margin: 14px 0 10px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #94A3B8; margin-bottom: 6px;">
-                    <span>Transit Progress ({ship.current_status.replace('_', ' ')})</span>
-                    <strong style="color: #38BDF8;">{ship.progress_pct}% Completed</strong>
-                </div>
-                <div style="width: 100%; background: #0F172A; border-radius: 10px; height: 10px; overflow: hidden; border: 1px solid #334155;">
-                    <div style="width: {ship.progress_pct}%; background: linear-gradient(90deg, #38BDF8, #10B981); height: 100%; border-radius: 10px;"></div>
-                </div>
-            </div>
+        # Clean Consumer Logistics Dashboard
+        c_trk1, c_trk2, c_trk3 = st.columns(3)
+        c_trk1.metric("Courier Waybill", ship.tracking_number, f"{ship.carrier_name} Prime Express")
+        c_trk2.metric("Guaranteed Delivery ETA", ship.estimated_delivery, "On-Time Dispatch")
+        c_trk3.metric("Doorstep Handover OTP", f"#{ship.otp_code}", "Verify Handover")
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px; font-size: 0.84rem; background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px; border: 1px solid #1E293B;">
-                <div>📍 <strong>Origin Hub:</strong> <span style="color: #CBD5E1;">{ship.origin_hub}</span></div>
-                <div>🎯 <strong>Destination:</strong> <span style="color: #CBD5E1;">{ship.destination_city}</span></div>
-                <div>🛡️ <strong>Tamper-Proof Seal:</strong> <code style="color: #A78BFA;">#{ship.security_seal_hash}</code></div>
-                <div>🔑 <strong>Delivery OTP:</strong> <strong style="color: #F59E0B; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px;">{ship.otp_code}</strong></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.progress(min(1.0, max(0.0, ship.progress_pct / 100.0)), text=f"Transit Progress: {ship.progress_pct}% Completed ({ship.current_status.replace('_', ' ')})")
+
+        d_col1, d_col2, d_col3, d_col4 = st.columns(4)
+        with d_col1:
+            st.markdown(f"📍 **Origin Hub:**<br><span style='color: #CBD5E1;'>{ship.origin_hub}</span>", unsafe_allow_html=True)
+        with d_col2:
+            st.markdown(f"🎯 **Destination:**<br><span style='color: #CBD5E1;'>{ship.destination_city}</span>", unsafe_allow_html=True)
+        with d_col3:
+            st.markdown(f"🛡️ **Tamper Seal:**<br><code style='color: #38BDF8;'>#{ship.security_seal_hash[:16]}...</code>", unsafe_allow_html=True)
+        with d_col4:
+            st.markdown(f"🔑 **Delivery PIN:**<br><strong style='color: #34D399; font-size: 1.1rem;'>#{ship.otp_code}</strong>", unsafe_allow_html=True)
 
         # Milestone Timeline
         st.markdown("##### 📍 Live Shipment Checkpoint Milestones")
@@ -1307,16 +1406,12 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         for idx, m in enumerate(ship.milestones):
             with t_cols[idx]:
                 status_color = "#10B981" if m.status == "COMPLETED" else ("#38BDF8" if m.status == "IN_PROGRESS" else "#64748B")
-                badge_bg = "rgba(16, 185, 129, 0.15)" if m.status == "COMPLETED" else ("rgba(56, 189, 248, 0.15)" if m.status == "IN_PROGRESS" else "rgba(100, 116, 139, 0.1)")
                 st.markdown(f"""
-                <div style="background: #0F172A; border-top: 3px solid {status_color}; border-radius: 8px; padding: 12px; border-left: 1px solid #1E293B; border-right: 1px solid #1E293B; border-bottom: 1px solid #1E293B; min-height: 180px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 1.1rem;">{m.icon}</span>
-                        <span style="font-size: 0.68rem; font-weight: 700; color: {status_color}; background: {badge_bg}; padding: 2px 6px; border-radius: 4px;">{m.status}</span>
-                    </div>
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #F8FAFC; margin-bottom: 4px;">{m.title}</div>
-                    <div style="font-size: 0.74rem; color: #94A3B8; margin-bottom: 6px;">⏱️ {m.timestamp} | {m.location}</div>
-                    <div style="font-size: 0.77rem; color: #CBD5E1; line-height: 1.3;">{m.description}</div>
+                <div style="background: rgba(15, 23, 42, 0.7); border-top: 3px solid {status_color}; border-radius: 8px; padding: 12px; border-left: 1px solid #1E293B; border-right: 1px solid #1E293B; border-bottom: 1px solid #1E293B; min-height: 140px;">
+                    <div style="font-size: 1rem; margin-bottom: 4px;">{m.icon} <span style="font-size: 0.72rem; font-weight: 700; color: {status_color};">{m.status}</span></div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #F8FAFC;">{m.title}</div>
+                    <div style="font-size: 0.74rem; color: #94A3B8; margin-top: 2px;">⏱️ {m.timestamp}</div>
+                    <div style="font-size: 0.77rem; color: #CBD5E1; margin-top: 4px;">{m.description}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
