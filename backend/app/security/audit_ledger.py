@@ -18,6 +18,10 @@ class AuditEntry(BaseModel):
     prev_hash: str
     block_hash: str
 
+    @property
+    def block_id(self) -> Optional[int]:
+        return self.id
+
 class ImmutableAuditLedger:
     """
     Cryptographically chained SQLite audit ledger.
@@ -163,6 +167,10 @@ class ImmutableAuditLedger:
                     block_hash=r["block_hash"]
                 ))
             return entries
+
+    def get_all_entries(self) -> List[AuditEntry]:
+        """Returns all audit ledger blocks (up to 1,000 recent blocks)."""
+        return self.get_recent_entries(limit=1000)
 
     def verify_chain_integrity(self) -> Dict[str, Any]:
         with self._get_connection() as conn:

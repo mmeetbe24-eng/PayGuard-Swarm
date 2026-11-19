@@ -292,6 +292,26 @@ st.markdown("""
         border-color: #38BDF8 !important;
         box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
     }
+
+    /* Sidebar High-Contrast Crisp White Styling */
+    [data-testid="stSidebar"], .stSidebar {
+        background-color: #0B0F19 !important;
+    }
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] div, 
+    [data-testid="stSidebar"] li, 
+    [data-testid="stSidebar"] label,
+    .stSidebar p, .stSidebar span, .stSidebar li {
+        color: #F8FAFC !important;
+    }
+    [data-testid="stSidebar"] code, .stSidebar code {
+        color: #38BDF8 !important;
+        background: #1E293B !important;
+    }
+    [data-testid="stSidebar"] .stCaption, .stSidebar .stCaption {
+        color: #94A3B8 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -340,29 +360,14 @@ with st.sidebar:
                 st.rerun()
         
     st.markdown("---")
-    st.subheader("🛡️ Zero-Trust Security Guarantees")
     st.markdown("""
-    * **Non-Custodial Enclave:** Master keys never shared with shopping bots.
-    * **Zero-PII Privacy Shield:** PCI-DSS & GDPR automated prompt redaction gate.
-    * **AES-256-GCM Vault:** Hardware-grade credential & token encryption at rest.
-    * **Smart Idempotency:** 10-minute sliding window duplicate order suppression & PayPal-Request-Id.
-    * **Autonomous Failover:** Self-healing multi-store routing.
-    * **EST Scoped Token:** 300s TTL, merchant lock & hard Rupee ceiling (₹).
-    * **Cryptographic Hash:** HMAC-SHA256 signature proof on every action.
-    * **Emergency VOID SLA:** < 250ms sub-second rollback.
-    """)
-
-    st.markdown("---")
-    st.subheader("🏆 Sponsor Prize Eligibility")
-    st.markdown("""
-    * 🟢 **PayPal:** Core Track (Orders v2 + Void)
-    * 🟢 **AG Grid:** Cybersecurity Audit Ledger
-    * 🟢 **Render:** Dual-Service Cloud Stack
-    * 🟢 **Postman:** Contract Test Assertions
-    * 🟢 **Zapier:** Event-Driven Webhooks
-    * 🟢 **Channel3:** Agentic Commerce Catalog
-    * 🟢 **APIMatic:** OpenAPI 3.0 & SDK Suite
-    """)
+    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 12px; margin-top: 8px;">
+        <div style="font-size: 0.82rem; font-weight: 700; color: #38BDF8;">🛡️ Non-Custodial Architecture</div>
+        <div style="font-size: 0.76rem; color: #E2E8F0; margin-top: 4px; line-height: 1.4;">
+            Master credentials secured in hardware-isolated enclave. See <strong>About Us</strong> for enterprise guarantees & sponsor integrations.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Active Page Routing (4 Webpages as per User Blueprint)
 selected_page = st.query_params.get("page", "cockpit")
@@ -1187,30 +1192,7 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
     is_tamper = (active_mode == "MIDFLIGHT_TAMPER")
 
     st.markdown("---")
-    st.subheader("⚡ Live 5-Agent Swarm Execution Telemetry")
-
-    # 5-Agent Visual Stepper Banner
-    step1_badge = "🟢 DRAFTED"
-    if res.agent2_multi_audit and res.agent2_multi_audit.failover_occurred:
-        step2_badge = "⚡ FAILOVER"
-    elif res.agent2_multi_audit and res.agent2_multi_audit.safe_certified_count > 0:
-        step2_badge = "🟢 AUDITED"
-    else:
-        step2_badge = "🔴 BLOCKED" if is_shielded else "⚪ BYPASSED"
-        
-    step3_badge = "🟢 ROUTED" if res.engine4_routing_result else "⚪ IDLE"
-    step4_badge = "🟢 ISSUED" if (res.agent3_vault_receipt and res.agent3_vault_receipt.authorized) else ("🔴 REJECTED" if is_tamper else "⚪ IDLE")
-    step5_badge = "🚨 VOIDED + 🟢 RECOVERED" if is_tamper else ("🟢 VERIFIED" if is_shielded and res.success else "⚪ IDLE")
-
-    st.markdown(f"""
-    <div style="display: flex; gap: 8px; justify-content: space-between; margin-bottom: 20px;">
-        <div class="stepper-box" style="flex: 1;"><strong>🛒 Agent 1: Negotiator</strong><br>{step1_badge}</div>
-        <div class="stepper-box" style="flex: 1;"><strong>🛡️ Agent 2: Sentry Audit</strong><br>{step2_badge}</div>
-        <div class="stepper-box" style="flex: 1;"><strong>⚡ Engine 4: Router</strong><br>{step3_badge}</div>
-        <div class="stepper-box" style="flex: 1;"><strong>🏦 Agent 3: Vault</strong><br>{step4_badge}</div>
-        <div class="stepper-box" style="flex: 1;"><strong>🚨 Agent 5: Watchdog</strong><br>{step5_badge}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.subheader("🏁 Autonomous Procurement Outcome")
 
     # Outcome Alert Card
     if getattr(res, "is_duplicate_intercepted", False):
@@ -1279,159 +1261,12 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         </div>
         """, unsafe_allow_html=True)
 
-    # REPLACED/UPGRADED SECTION: Live Autonomous Swarm Procurement & Self-Healing Journey
-    st.markdown("### 🛣️ Live Autonomous Swarm Procurement & Self-Healing Journey")
-    st.caption("Complete chronological record of how the 5 agents discovered vendors, eliminated fraud, and autonomously fulfilled your purchase:")
-
-    if res and hasattr(res, "journey_steps") and res.journey_steps:
-        steps = res.journey_steps
-    elif active_mode == "MIDFLIGHT_TAMPER":
-        # 6-Step Post-Void Failover Journey
-        steps = [
-            {
-                "num": "STEP 1", "icon": "🛒", "title": "Multi-Store Market Discovery", 
-                "badge": "✔ DISCOVERED", "badge_color": "#38BDF8", "border": "#38BDF8",
-                "text": f"Swarm crawled live vendor catalogs. Identified Store D as lowest advertised, with Store A as authentic backup partner."
-            },
-            {
-                "num": "STEP 2", "icon": "🛡️", "title": "Pre-Auth HTML DOM Audit & Scoped Token", 
-                "badge": "✔ EST ISSUED", "badge_color": "#10B981", "border": "#10B981",
-                "text": "Agent 2 inspected Store D HTML: DOM was clean and verified authentic. Agent 3 (Vault Enclave) issued an Ephemeral Scoped Token with strict mathematical ceiling."
-            },
-            {
-                "num": "STEP 3", "icon": "⚡", "title": "Mid-Flight Merchant Price Surge", 
-                "badge": "🚨 HIJACK ATTEMPT", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": "Right at checkout execution, Store D's rogue payment gateway secretly injected a hidden surge fee, attempting unauthorized markup!"
-            },
-            {
-                "num": "STEP 4", "icon": "🚨", "title": "Sub-25ms Watchdog Intercept & PayPal Emergency VOID", 
-                "badge": f"🚨 VOIDED ({res.agent5_circuit_breaker.decision_ms if res.agent5_circuit_breaker else 2.1}ms)", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": f"Agent 5 Circuit Breaker caught token ceiling breach in {res.agent5_circuit_breaker.decision_ms if res.agent5_circuit_breaker else 2.1}ms and invoked PayPal's authorization void endpoint. Pending order cancelled. ₹0.00 lost!"
-            },
-            {
-                "num": "STEP 5", "icon": "🔄", "title": "Autonomous Post-Void Failover (Never Stop at Fraud!)", 
-                "badge": "⚡ AUTONOMOUS FAILOVER", "badge_color": "#F59E0B", "border": "#F59E0B",
-                "text": f"Rather than failing user directive, Swarm blacklisted Store D and immediately re-routed to certified authentic partner {res.target_store}."
-            },
-            {
-                "num": "STEP 6", "icon": "🟢", "title": "Safe Delivery & Final PayPal Settlement", 
-                "badge": "🟢 SETTLED SECURELY", "badge_color": "#10B981", "border": "#10B981",
-                "text": f"Agent 3 Vault issued a fresh bounded EST token and safely captured order via PayPal Orders v2 (Capture ID: {res.agent3_vault_receipt.paypal_capture_id if res.agent3_vault_receipt else 'CAP-SETTLED'})."
-            }
-        ]
-    elif is_shielded:
-        # 5-Step Pre-Auth Failover Journey
-        steps = [
-            {
-                "num": "STEP 1", "icon": "🛒", "title": "Multi-Store Discovery & Price Ranking", 
-                "badge": "✔ DISCOVERED", "badge_color": "#38BDF8", "border": "#38BDF8",
-                "text": "Swarm crawled candidate merchants. Agent 1 drafted proposal for lowest advertised discount."
-            },
-            {
-                "num": "STEP 2", "icon": "🛡️", "title": "Adversarial Pre-Auth Sentry Scan", 
-                "badge": "🚨 QUARANTINED", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": "Agent 2 sanitized Store B HTML and stripped steganography. Detected CSS injection violations and hidden prompt override. Store B QUARANTINED."
-            },
-            {
-                "num": "STEP 3", "icon": "⚡", "title": "Autonomous Multi-Store Scan & Candidate Failover", 
-                "badge": "⚡ FAILOVER TO STORE A", "badge_color": "#F59E0B", "border": "#F59E0B",
-                "text": f"Swarm refused to abandon order! Disqualified out-of-budget stores and certified authentic partner {res.target_store}."
-            },
-            {
-                "num": "STEP 4", "icon": "🏦", "title": "Logically Isolated Enclave Scoped Token Authorization", 
-                "badge": "🏦 EST BOUNDED", "badge_color": "#10B981", "border": "#10B981",
-                "text": f"Agent 3 issued an HMAC-SHA256 Ephemeral Scoped Token (EST) locked to certified merchant with a strict mathematical ceiling."
-            },
-            {
-                "num": "STEP 5", "icon": "🟢", "title": "Safe PayPal Settlement & Order Capture", 
-                "badge": "🟢 ORDER CAPTURED", "badge_color": "#10B981", "border": "#10B981",
-                "text": f"Captured safely via PayPal Orders v2 (Capture ID: {res.agent3_vault_receipt.paypal_capture_id if res.agent3_vault_receipt else 'CAP-SETTLED'}). Product purchased safely with zero overspend!"
-            }
-        ]
-    else:
-        # Vulnerable Bot Failure Journey
-        steps = [
-            {
-                "num": "STEP 1", "icon": "🛒", "title": "Naive Discount Scrape", 
-                "badge": "🔴 GREEDY PARSING", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": "Bot crawled catalogs looking ONLY at advertised discount without inspecting DOM security or vendor reputation."
-            },
-            {
-                "num": "STEP 2", "icon": "⚠️", "title": "Raw HTML Ingestion (No Enclave)", 
-                "badge": "🔴 UNPROTECTED", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": "Bot digested un-sanitized webpage directly into reasoning loop. Read microscopic text embedding malicious system overrides."
-            },
-            {
-                "num": "STEP 3", "icon": "💥", "title": "Indirect Prompt Injection Hijack", 
-                "badge": "🔴 HIJACKED", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": "Adversarial payload overrode bot system instructions. Bot drafted an unauthorized inflated charge."
-            },
-            {
-                "num": "STEP 4", "icon": "💸", "title": "Direct Carte-Blanche Wallet Drain", 
-                "badge": "🔴 WALLET DRAINED", "badge_color": "#EF4444", "border": "#EF4444",
-                "text": "Because unshielded bot held raw master payment credentials with no ephemeral token ceiling, unauthorized charge was processed. Total wallet compromise!"
-            }
-        ]
-
-    # Render Journey Cards
-    j_col1, j_col2 = st.columns(2)
-    for idx, s in enumerate(steps):
-        target_col = j_col1 if idx % 2 == 0 else j_col2
-        with target_col:
-            st.markdown(f"""
-            <div style="background: #0F172A; border-left: 4px solid {s.get('border', '#38BDF8')}; border-radius: 8px; padding: 14px; margin-bottom: 12px; border-top: 1px solid #1E293B; border-right: 1px solid #1E293B; border-bottom: 1px solid #1E293B;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-size: 0.75rem; font-weight: bold; color: #94A3B8; background: #1E293B; padding: 2px 8px; border-radius: 4px;">{s.get('num', f'STEP {idx+1}')}</span>
-                    <span style="font-size: 0.75rem; font-weight: bold; color: {s.get('badge_color', '#38BDF8')}; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 4px;">{s.get('badge', 'STATUS')}</span>
-                </div>
-                <h5 style="margin: 4px 0 6px 0; color: #F8FAFC;">{s.get('icon', '🔹')} {s.get('title', 'Process Step')}</h5>
-                <p style="font-size: 0.88rem; color: #CBD5E1; margin: 0; line-height: 1.4;">{s.get('text', '')}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # Agent Detailed Cards
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("#### 🛒 Agent 1: Procurement & Failover Decision Log")
-        st.code(res.failover_recovery_note or res.agent1_shopper_draft.negotiation_reasoning, language="text")
-
-        if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
-            st.markdown("#### 🏦 Agent 3: Ephemeral Token Enclave (The Vault)")
-            st.code(json.dumps({
-                "token_id": res.agent3_vault_receipt.token.token_id,
-                "amount_ceiling": f"₹{res.agent3_vault_receipt.token.amount_ceiling:.2f}",
-                "merchant_lock": res.agent3_vault_receipt.token.merchant_id,
-                "signature_hmac_sha256": res.agent3_vault_receipt.token.signature[:24] + "...",
-                "paypal_order_id": res.agent3_vault_receipt.paypal_order_id,
-                "paypal_capture_id": res.agent3_vault_receipt.paypal_capture_id
-            }, indent=2), language="json")
-
-    with c2:
-        if res.engine4_routing_result:
-            st.markdown("#### ⚡ Engine 4: API Cost Optimizer & Smart Router")
-            st.code(json.dumps({
-                "route_type": res.engine4_routing_result.route_type,
-                "amount": f"₹{res.engine4_routing_result.order_amount:.2f}",
-                "fee_saved": f"₹{res.engine4_routing_result.fee_saved_estimate:.2f}",
-                "summary": res.engine4_routing_result.summary
-            }, indent=2), language="json")
-
-        if res.agent5_circuit_breaker:
-            st.markdown("#### 🚨 Agent 5: Real-Time Circuit Breaker & Watchdog")
-            st.code(json.dumps({
-                "status": res.agent5_circuit_breaker.status,
-                "circuit_breaker_tripped": res.agent5_circuit_breaker.circuit_breaker_tripped,
-                "paypal_action_taken": res.agent5_circuit_breaker.action_taken,
-                "intercept_latency": f"{res.agent5_circuit_breaker.latency_ms} ms",
-                "message": res.agent5_circuit_breaker.message
-            }, indent=2), language="json")
-
-    # Agent 6: Autonomous Courier & Delivery Tracking (Post-Purchase Logistics Guardian)
+    # Agent 6: Autonomous Courier & Live Delivery Tracking (Post-Purchase Logistics Guardian)
     if hasattr(res, "agent6_fulfillment") and res.agent6_fulfillment:
         ship = res.agent6_fulfillment
         st.markdown("---")
-        st.subheader("📦 Agent 6: Autonomous Courier & Real-Time Delivery Tracking")
-        st.caption(f"Zero-Trust fulfillment watchdog actively monitoring waybill `{ship.tracking_number}` via {ship.carrier_name}.")
+        st.subheader("📦 Live Courier & Delivery Tracking")
+        st.caption(f"Real-time fulfillment tracking for waybill `{ship.tracking_number}` via {ship.carrier_name}.")
 
         # Render Header Card with Carrier Badge, ETA, and Tamper-evident Seal
         st.markdown(f"""
@@ -1500,29 +1335,6 @@ if st.session_state.get("has_executed", False) and st.session_state.get("latest_
         """, unsafe_allow_html=True)
 
         st.info("🛡️ **PayGuard Non-Custodial Delivery Guarantee:** Agent 6 monitors live courier telemetry in the background. If transit time exceeds promised SLA window, Agent 6 autonomously invokes PayPal Dispute & Refund APIs to claim compensation for the customer.")
-
-        # Inbound Carrier Webhook Ingestion (For Postman, Live Demonstrations, & QA Verification)
-        with st.expander("🛠️ Inbound Carrier Webhook Gateway (Postman / QA Sandbox)", expanded=False):
-            st.caption("In production, these webhooks are dispatched automatically by BlueDart / Delhivery gateways when drivers scan parcels. Use this gateway to test incoming webhook event ingest.")
-            sim_c1, sim_c2, sim_c3 = st.columns(3)
-            with sim_c1:
-                if st.button("📡 Ingest: SCAN_OUT_FOR_DELIVERY", key="btn_sim_out_delivery", use_container_width=True):
-                    from backend.app.agents.fulfillment_tracker import fulfillment_tracker
-                    fulfillment_tracker.advance_to_out_for_delivery(ship)
-                    st.success(f"✔ Webhook received! Package is now Out for Delivery. Handover OTP #{ship.otp_code} dispatched via Zapier SMS.")
-                    st.rerun()
-            with sim_c2:
-                if st.button("📡 Ingest: SCAN_DELIVERY_CONFIRMED", key="btn_sim_delivered", use_container_width=True, type="primary"):
-                    from backend.app.agents.fulfillment_tracker import fulfillment_tracker
-                    fulfillment_tracker.mark_delivered(ship)
-                    st.success(f"✔ Webhook received! Delivery verified with OTP #{ship.otp_code}. Tamper receipt #{ship.security_seal_hash} committed to Audit Ledger.")
-                    st.rerun()
-            with sim_c3:
-                if st.button("⚠️ Ingest: CARRIER_SLA_BREACH", key="btn_sim_sla_breach", use_container_width=True):
-                    from backend.app.agents.fulfillment_tracker import fulfillment_tracker
-                    fulfillment_tracker.trigger_sla_breach_penalty(ship, refund_amount=200.0)
-                    st.warning(f"⚠️ Webhook received! Transit SLA breached. Agent 6 autonomously initiated a ₹200.00 PayPal compensation refund for customer.")
-                    st.rerun()
 
     # Downloadable Proof-of-Safety Certificate as PDF & JSON
     if res.agent3_vault_receipt and res.agent3_vault_receipt.token:
