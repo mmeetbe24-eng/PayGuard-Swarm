@@ -61,7 +61,7 @@ class DuplicateOrderDetector:
         Extracts and normalizes core product tokens from autonomous directives.
         Filters out generic filler words (find, buy, under, using, paypal, please).
         """
-        cleaned = prompt.lower()
+        cleaned = str(prompt or "").lower()
         # Remove currency symbols and price patterns
         cleaned = re.sub(r'[₹\$€£][\d,.]+', ' ', cleaned)
         cleaned = re.sub(r'\bunder\s+[\d,.]+', ' ', cleaned)
@@ -75,7 +75,7 @@ class DuplicateOrderDetector:
     @classmethod
     def extract_core_tokens(cls, prompt: str) -> set:
         """Extracts unique set of product tokens for semantic overlap comparison."""
-        cleaned = prompt.lower()
+        cleaned = str(prompt or "").lower()
         cleaned = re.sub(r'[₹\$€£][\d,.]+', ' ', cleaned)
         cleaned = re.sub(r'\bunder\s+[\d,.]+', ' ', cleaned)
         cleaned = re.sub(r'\bfor\s+[\d,.]+', ' ', cleaned)
@@ -116,7 +116,7 @@ class DuplicateOrderDetector:
     def check_duplicate(
         self,
         prompt: str,
-        amount: float,
+        amount: float = 0.0,
         currency: str = "INR",
         window_seconds: Optional[int] = None
     ) -> DuplicateCheckResult:

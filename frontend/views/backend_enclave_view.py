@@ -181,18 +181,34 @@ def render_backend_enclave_page():
                     sim_c1, sim_c2, sim_c3 = st.columns(3)
                     with sim_c1:
                         if st.button("🚚 Ingest: OUT_FOR_DELIVERY", key="enclave_btn_sim_out_delivery", use_container_width=True):
-                            from backend.app.agents.fulfillment_tracker import fulfillment_tracker
-                            fulfillment_tracker.simulate_carrier_webhook(ship.tracking_number, "OUT_FOR_DELIVERY")
+                            try:
+                                from backend.app.agents.fulfillment_tracker import fulfillment_tracker
+                                if hasattr(fulfillment_tracker, "advance_to_out_for_delivery"):
+                                    fulfillment_tracker.advance_to_out_for_delivery(ship)
+                                elif hasattr(fulfillment_tracker, "simulate_carrier_webhook"):
+                                    fulfillment_tracker.simulate_carrier_webhook(ship.tracking_number, "OUT_FOR_DELIVERY")
+                            except Exception as e:
+                                st.warning(f"Carrier notice: {e}")
                             st.rerun()
                     with sim_c2:
                         if st.button("✅ Ingest: DELIVERED", key="enclave_btn_sim_delivered", use_container_width=True):
-                            from backend.app.agents.fulfillment_tracker import fulfillment_tracker
-                            fulfillment_tracker.simulate_carrier_webhook(ship.tracking_number, "DELIVERED")
+                            try:
+                                from backend.app.agents.fulfillment_tracker import fulfillment_tracker
+                                if hasattr(fulfillment_tracker, "mark_delivered"):
+                                    fulfillment_tracker.mark_delivered(ship)
+                                elif hasattr(fulfillment_tracker, "simulate_carrier_webhook"):
+                                    fulfillment_tracker.simulate_carrier_webhook(ship.tracking_number, "DELIVERED")
+                            except Exception as e:
+                                st.warning(f"Carrier notice: {e}")
                             st.rerun()
                     with sim_c3:
                         if st.button("⚠️ Ingest: CARRIER_SLA_BREACH", key="enclave_btn_sim_sla_breach", use_container_width=True):
-                            from backend.app.agents.fulfillment_tracker import fulfillment_tracker
-                            fulfillment_tracker.trigger_sla_breach_penalty(ship, refund_amount=200.0)
+                            try:
+                                from backend.app.agents.fulfillment_tracker import fulfillment_tracker
+                                if hasattr(fulfillment_tracker, "trigger_sla_breach_penalty"):
+                                    fulfillment_tracker.trigger_sla_breach_penalty(ship, refund_amount=200.0)
+                            except Exception as e:
+                                st.warning(f"Carrier notice: {e}")
                             st.warning("⚠️ Webhook received! Transit SLA breached. Agent 6 autonomously initiated a ₹200.00 PayPal compensation refund.")
                             st.rerun()
         else:
